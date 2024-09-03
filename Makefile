@@ -1,12 +1,12 @@
-CC:=clang++-18
+CC:=clang-18
 
-CWARN:=-Wall -Wextra -Weffc++ -Wcast-align -Wcast-qual -Wchar-subscripts\
--Wctor-dtor-privacy -Wempty-body -Wfloat-equal -Wformat-nonliteral\
--Wformat-security -Wformat=2 -Winline -Wnon-virtual-dtor -Woverloaded-virtual\
+CWARN:=-Wall -Wextra -Wcast-align -Wcast-qual -Wchar-subscripts\
+-Wempty-body -Wfloat-equal -Wformat-nonliteral\
+-Wformat-security -Wformat=2 -Winline\
 -Wpacked -Wpointer-arith -Wredundant-decls -Wsign-promo -Wstrict-overflow=2\
 -Wswitch-default -Wswitch-enum -Wundef -Wunreachable-code -Wunused\
 -Wvariadic-macros -Wno-missing-field-initializers -Wno-narrowing\
--Wno-old-style-cast -Wno-varargs -Wno-unused-command-line-argument
+ -Wno-unused-command-line-argument
 
 CDEBUG:=-D _DEBUG -ggdb -fcheck-new -fsized-deallocation -fstack-protector\
 -fstrict-overflow -fno-omit-frame-pointer\
@@ -17,7 +17,7 @@ CDEBUG:=-D _DEBUG -ggdb -fcheck-new -fsized-deallocation -fstack-protector\
 
 CMACHINE:=# -mavx512f -march=native -mtune=native
 
-CFLAGS:=-std=c++23 -fPIE $(CMACHINE) $(CWARN)
+CFLAGS:=-std=c99 -fPIE $(CMACHINE) $(CWARN)
 BUILDTYPE?=Debug
 
 ifeq ($(BUILDTYPE), Release)
@@ -39,8 +39,8 @@ OBJDIR 	:= $(BUILDDIR)/obj
 BINDIR	:= $(BUILDDIR)/bin
 MAKEDIR := $(BUILDDIR)/make
 
-SRCEXT	:= cpp
-HEADEXT	:= hpp
+SRCEXT	:= c
+HEADEXT	:= h
 OBJEXT	:= o
 DEPEXT  := d
 
@@ -64,7 +64,6 @@ INCFLAGS:= -I$(SRCDIR) -I$(INCDIR)
 LFLAGS  := -Llib/ $(addprefix -l, $(LIBS))
 
 all: $(BINDIR)/$(PROJECT)
-	@echo $(call color,GREEN,=== Build done! ===)
 
 init:
 	@mkdir -p $(SRCDIR)
@@ -86,6 +85,7 @@ $(BINDIR)/$(PROJECT): $(OBJECTS)
 	@$(CC) $(CFLAGS) $^ $(LFLAGS) -o $(BINDIR)/$(PROJECT)\
 		|| (echo $(call color,RED,=== Failed to build project $(PROJECT) ===);\
 		    exit 1)
+	@echo $(call color,GREEN,=== Build done! ===)
 
 # Remove objects
 clean:
