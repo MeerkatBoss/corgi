@@ -2,7 +2,7 @@
  * @file List.h
  * @author MeerkatBoss (solodovnikov.ia@phystech.edu)
  *
- * @brief
+ * @brief Double-linked list data structure
  *
  * @version 0.1
  * @date 2024-09-03
@@ -75,7 +75,6 @@ static inline void list_insert_node(
   node->next = before;
 }
 
-
 /**
  * @brief Iterate over linked list
  *
@@ -90,6 +89,13 @@ static inline void list_insert_node(
       node = node->next\
   )
 
+/**
+ * @brief Iterate over linked list with constant iteration variable
+ *
+ * @param name Name of iteration variable.
+ * @param list Non-pointer root of linked list.
+ *             Root is assumed to not contain actual data.
+ */
 #define LIST_CONST_FOREACH(name, list)\
   for (\
       const struct LinkedListNode* node = (list).next;\
