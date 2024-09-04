@@ -39,12 +39,15 @@ OBJDIR 	:= $(BUILDDIR)/obj
 BINDIR	:= $(BUILDDIR)/bin
 MAKEDIR := $(BUILDDIR)/make
 
+DOCDIR := doc
+
 SRCEXT	:= c
 HEADEXT	:= h
 OBJEXT	:= o
 DEPEXT  := d
 
 SOURCES := $(shell find $(SRCDIR) -type f -name "*.$(SRCEXT)")
+HEADERS := $(shell find $(SRCDIR) -type f -name "*.$(HEADEXT)")
 LIBS	  := $(patsubst lib%.a, %, $(shell find $(LIBDIR) -type f))
 OBJECTS	:= $(patsubst $(SRCDIR)/%,$(OBJDIR)/%,$(SOURCES:.$(SRCEXT)=.$(OBJEXT)))
 DEPS    := $(patsubst $(SRCDIR)/%,$(MAKEDIR)/%,$(SOURCES:.$(SRCEXT)=.$(DEPEXT)))
@@ -64,6 +67,14 @@ INCFLAGS:= -I$(SRCDIR) -I$(INCDIR)
 LFLAGS  := -Llib/ $(addprefix -l, $(LIBS))
 
 all: $(BINDIR)/$(PROJECT)
+
+doc: $(DOCDIR)/html/index.html
+
+$(DOCDIR)/html/index.html: Doxyfile CHANGELOG.md $(SOURCES) $(HEADERS)
+	@doxygen
+
+view-doc: $(DOCDIR)/html/index.html
+	@xdg-open $<
 
 init:
 	@mkdir -p $(SRCDIR)
@@ -104,6 +115,7 @@ run: $(BINDIR)/$(PROJECT)
 
 debug: $(BINDIR)/$(PROJECT)
 	@gdb --args $< $(ARGS)
+
 
 include $(DEPS)
 
