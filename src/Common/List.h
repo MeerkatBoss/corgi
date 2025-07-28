@@ -13,61 +13,71 @@
 #define __COMMON_LIST_H
 
 #include <assert.h>
+#include <stddef.h>
 
-struct LinkedListNode {
-  struct LinkedListNode* next;
-  struct LinkedListNode* prev;
-};
+typedef struct LinkedListNode_ {
+  struct LinkedListNode_* next;
+  struct LinkedListNode_* prev;
+} LinkedListNode;
 
-/**
- * @brief Initiliaze empty linked list
- */
-static inline void list_init(struct LinkedListNode* node) {
-  node->next = node;
-  node->prev = node;
+typedef struct {
+  LinkedListNode root;
+} LinkedList;
+
+static inline void list_node_init(LinkedListNode* node) {
+  node->next = NULL;
+  node->prev = NULL;
 }
 
-/**
- * @brief Check if linked list is empty.
- * @return 1 if list is empty, 0 otherwise
- */
-static inline int list_is_empty(struct LinkedListNode* node) {
-  if (node->next == node) {
-    assert(node->prev == node);
+static inline int list_node_is_null(LinkedListNode* node) {
+  assert( (node->prev == NULL) == (node->prev == NULL) );
+  return node->prev == NULL;
+}
+
+static inline void list_init(LinkedList* list) {
+  list->root.next = &list->root;
+  list->root.prev = &list->root;
+}
+
+static inline int list_is_empty(LinkedList* list) {
+  if (list->root.next == &list->root) {
+    assert(list->root.prev == &list->root);
     return 1;
   }
   return 0;
 }
 
 /**
- * @brief Delete node from linked list, turning the node into empty list
+ * @brief Delete node from linked list
+ *
  * @return Deleted node
+ *
+ * @error Root node of list cannot be taken
  */
-static inline struct LinkedListNode* list_take_node(struct LinkedListNode* node) {
-  if (list_is_empty(node)) {
-    return node;
-  }
-  struct LinkedListNode* prev = node->prev;
-  struct LinkedListNode* next = node->next;
+static inline LinkedListNode* list_take_node(LinkedListNode* node) {
+  LinkedListNode* prev = node->prev;
+  LinkedListNode* next = node->next;
+  /* Only root node can be self-referential */
+  assert(prev != node);
+  assert(next != node);
+
   prev->next = next;
   next->prev = prev;
-  list_init(node);
+  list_node_init(node);
   return node;
 }
 
 /**
  * @brief Insert new node after given node
  *
- * @warning New node should not already be in list
+ * @warning New node should be null
  */
 static inline void list_insert_node(
-    struct LinkedListNode* after,
-    struct LinkedListNode* node
+    LinkedListNode* after,
+    LinkedListNode* node
 ) {
-  assert(after != node);
-  struct LinkedListNode* before = after->next;
-  assert(node != before);
-  assert(before->prev == after);
+  assert(list_node_is_null(node));
+  LinkedListNode* before = after->next;
 
   after->next = node;
   before->prev = node;
@@ -76,31 +86,77 @@ static inline void list_insert_node(
 }
 
 /**
+ * @brief Prepend node to list
+ * 
+ * @warning New node should not already be in list
+ */
+static inline void list_push_front(
+    LinkedList* list,
+    LinkedListNode* node
+) {
+  list_insert_node(&list->root, node);
+}
+
+/**
+ * @brief Append node to list
+ * 
+ * @warning New node should not already be in list
+ */
+static inline void list_push_back(
+    LinkedList* list,
+    LinkedListNode* node
+) {
+  list_insert_node(list->root.prev, node); 
+}
+
+/**
+ * @brief Remove first node from list
+ *
+ * @return Removed node or NULL if list is empty
+ */
+static inline LinkedListNode* list_pop_front(LinkedList* list) {
+  if (list_is_empty(list)) {
+    return NULL;
+  }
+  return list_take_node(list->root.next);
+}
+
+/**
+ * @brief Remove last node from list
+ *
+ * @return Removed node or NULL if list is empty
+ */
+static inline LinkedListNode* list_pop_back(LinkedList* list) {
+  if (list_is_empty(list)) {
+    return NULL;
+  }
+  return list_take_node(list->root.prev);
+}
+
+/**
  * @brief Iterate over linked list
  *
  * @param name Name of iteration variable.
- * @param list Non-pointer root of linked list.
- *             Root is assumed to not contain actual data.
+ * @param list Linked list
  */
 #define LIST_FOREACH(name, list)\
   for (\
-      struct LinkedListNode* node = (list).next;\
-      node != &list;\
-      node = node->next\
+      LinkedListNode* name = (list).root.next;\
+      name != &(list).root;\
+      name = name->next\
   )
 
 /**
  * @brief Iterate over linked list with constant iteration variable
  *
  * @param name Name of iteration variable.
- * @param list Non-pointer root of linked list.
- *             Root is assumed to not contain actual data.
+ * @param list Linked list
  */
 #define LIST_CONST_FOREACH(name, list)\
   for (\
-      const struct LinkedListNode* node = (list).next;\
-      node != &list;\
-      node = node->next\
+      const LinkedListNode* name = (list).root.next;\
+      name != &(list).root;\
+      name = name->next\
   )
 
 #endif /* List.h */

@@ -3,14 +3,14 @@
 
 #include "Common/List.h"
 
-struct IntList {
-  struct LinkedListNode as_list;
+typedef struct {
+  LinkedListNode as_node;
   int value;
-};
+} IntListNode;
 
-static void int_list_print(const struct LinkedListNode* list) {
+static void int_list_print(const LinkedList* list) {
   LIST_CONST_FOREACH(node, *list) {
-    const struct IntList* int_node = (const struct IntList*) node;
+    const IntListNode* int_node = (const IntListNode*) node;
     printf("%d ", int_node->value);
   }
   puts("");
@@ -18,25 +18,16 @@ static void int_list_print(const struct LinkedListNode* list) {
 
 int main()
 {
-  struct LinkedListNode int_list;
+  LinkedList int_list;
   list_init(&int_list);
 
-  struct IntList nodes[5];
+  IntListNode nodes[5];
   for (size_t i = 0; i < 5; ++i) {
+    list_node_init(&nodes[i].as_node);
     nodes[i].value = i;
-    list_insert_node(int_list.prev, &nodes[i].as_list);
+    list_push_back(&int_list, &nodes[i].as_node);
   }
   int_list_print(&int_list);
-
-  struct IntList* two = (struct IntList*) int_list.next->next->next;
-  assert(two->value == 2);
-
-  list_take_node(&two->as_list);
-  int_list_print(&int_list);
-
-  list_insert_node(&int_list, &two->as_list);
-  int_list_print(&int_list);
-
 
   return 0;
 }
