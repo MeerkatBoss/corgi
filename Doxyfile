@@ -794,7 +794,7 @@ CITE_BIB_FILES         =
 # messages are off.
 # The default value is: NO.
 
-QUIET                  = NO
+QUIET                  = YES
 
 # The WARNINGS tag can be used to turn on/off the warning messages that are
 # generated to standard error (stderr) by doxygen. If WARNINGS is set to YES
@@ -893,51 +893,52 @@ INPUT_ENCODING         = UTF-8
 # *.py, *.pyw, *.f90, *.f95, *.f03, *.f08, *.f18, *.f, *.for, *.vhd, *.vhdl,
 # *.ucf, *.qsf and *.ice.
 
-FILE_PATTERNS          = *.c \
-                         *.cc \
-                         *.cxx \
-                         *.cpp \
-                         *.c++ \
-                         *.java \
-                         *.ii \
-                         *.ixx \
-                         *.ipp \
-                         *.i++ \
-                         *.inl \
-                         *.idl \
-                         *.ddl \
-                         *.odl \
-                         *.h \
-                         *.hh \
-                         *.hxx \
-                         *.hpp \
-                         *.h++ \
-                         *.cs \
-                         *.d \
-                         *.php \
-                         *.php4 \
-                         *.php5 \
-                         *.phtml \
-                         *.inc \
-                         *.m \
-                         *.markdown \
-                         *.md \
-                         *.mm \
-                         *.dox \
-                         *.py \
-                         *.pyw \
-                         *.f90 \
-                         *.f95 \
-                         *.f03 \
-                         *.f08 \
-                         *.f18 \
-                         *.f \
-                         *.for \
-                         *.vhd \
-                         *.vhdl \
-                         *.ucf \
-                         *.qsf \
-                         *.ice
+FILE_PATTERNS          = *.h *.md
+#                         *.c \
+#                         *.cc \
+#                         *.cxx \
+#                         *.cpp \
+#                         *.c++ \
+#                         *.java \
+#                         *.ii \
+#                         *.ixx \
+#                         *.ipp \
+#                         *.i++ \
+#                         *.inl \
+#                         *.idl \
+#                         *.ddl \
+#                         *.odl \
+#                         *.h \
+#                         *.hh \
+#                         *.hxx \
+#                         *.hpp \
+#                         *.h++ \
+#                         *.cs \
+#                         *.d \
+#                         *.php \
+#                         *.php4 \
+#                         *.php5 \
+#                         *.phtml \
+#                         *.inc \
+#                         *.m \
+#                         *.markdown \
+#                         *.md \
+#                         *.mm \
+#                         *.dox \
+#                         *.py \
+#                         *.pyw \
+#                         *.f90 \
+#                         *.f95 \
+#                         *.f03 \
+#                         *.f08 \
+#                         *.f18 \
+#                         *.f \
+#                         *.for \
+#                         *.vhd \
+#                         *.vhdl \
+#                         *.ucf \
+#                         *.qsf \
+#                         *.ice
 
 # The RECURSIVE tag can be used to specify whether or not subdirectories should
 # be searched for input files as well.
