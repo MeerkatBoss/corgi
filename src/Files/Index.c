@@ -28,7 +28,16 @@ file_error_t file_add_to_index(FileIndex* index, const char* path) {
     return res;
   }
 
-  list_push_back(&index->files, &file->as_node);
+  /* Insert in sorted order by real_timestamp */
+  LinkedListNode* insert_after = &index->files.root;
+  LIST_FOREACH(node, index->files) {
+    IndexedFile* cur_file = (IndexedFile*) node;
+    if (file->real_timestamp < cur_file->real_timestamp) {
+      break;
+    }
+    insert_after = node;
+  }
+  list_insert_node(insert_after, &file->as_node);
   index->file_count++;
 
   return FERR_NONE;
