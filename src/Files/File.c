@@ -3,7 +3,6 @@
 #include <assert.h>
 #include <errno.h>
 #include <stdarg.h>
-#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <sys/stat.h>
@@ -13,77 +12,41 @@
 #include "Common/List.h"
 #include "Common/Strings.h"
 
-void file_index_init(
-    FileIndex* index,
-    int override_timestamp,
-    ...
-) {
-  list_init(&index->files);
-
-  if (override_timestamp) {
-    va_list args;
-    va_start(args, override_timestamp);
-    time_t override_value = va_arg(args, time_t);
-    va_end(args);
-
-    index->override_timestamp = 1;
-    index->override_value = override_value;
-  } else {
-    index->override_timestamp = 0;
-    index->override_value = 0;
-  }
-}
-
-void file_index_clear(FileIndex* index) {
-  LinkedListNode* node = NULL;
-  while ((node = list_pop_front(&index->files))) {
-    IndexedFile* file = (IndexedFile*) node;
-
-    file_clear_tags(file);
-    free(file->path);
-    free(file);
-  }
-}
-
-file_error_t file_add_to_index(FileIndex* index, const char* path) {
+file_error_t file_init(IndexedFile* file, const char* path) {
   /* Check if file exists and is readable */
   if (access(path, R_OK) != 0) {
     if (errno == ENOENT || errno == ENOTDIR) {
-      return FERR_INVALID_PATH;
+      return FERR_INVALID_VALUE;
     }
 
     return FERR_ACCESS_DENIED;
   }
 
-  time_t timestamp = 0;
-  if (index->override_timestamp) {
-    /* Override timestamp */
-    timestamp = index->override_value;
-  } else {
-    /* Keep original timestamp */
-    struct stat file_stat;
-    int res = stat(path, &file_stat);
-    if (res != 0) {
-      return FERR_ACCESS_DENIED;
-    }
-
-    timestamp = file_stat.st_ctime;
+  /* Get file timestamp */
+  struct stat file_stat;
+  int res = stat(path, &file_stat);
+  if (res != 0) {
+    return FERR_ACCESS_DENIED;
   }
-
-  /* Initialize IndexedFile */
-  IndexedFile* file = (IndexedFile*) calloc(1, sizeof(*file));
-  list_node_init(&file->as_node);
+  file->real_timestamp = file_stat.st_ctime;
+  file->override_timestamp = file->real_timestamp;
   file->path = copy_string(path);
-  file->timestamp = timestamp;
   file->tag_count = 0;
   for (size_t i = 0; i < FILE_MAX_TAGS; ++i) {
     file->tags[i] = NULL;
   }
-
-  /* Add file to index */
-  list_push_back(&index->files, &file->as_node);
+  list_node_init(&file->as_node);
 
   return FERR_NONE;
+}
+
+void file_cleanup(IndexedFile* file) {
+  if (!list_node_is_null(&file->as_node)) {
+    list_take_node(&file->as_node);
+  }
+  file_clear_tags(file);
+  free(file->path);
+  file->path = NULL;
 }
 
 static int string_compare(const void* lhs, const void* rhs) {
@@ -121,7 +84,7 @@ unsigned long file_generate_name(
     DATE_BUFSIZE = 11 /* YYYY-MM-DD\0 */
   };
   /* Format timestamp */
-  const struct tm* time = gmtime(&file->timestamp);
+  const struct tm* time = gmtime(&file->override_timestamp);
   char date_buf[DATE_BUFSIZE];
   strftime(date_buf, DATE_BUFSIZE, "%Y-%m-%d", time);
 

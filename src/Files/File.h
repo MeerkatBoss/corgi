@@ -17,24 +17,7 @@
 #include <time.h>
 
 #include "Common/List.h"
-
-/**
- * @brief Maximum number of tags that can be attached to file
- */
-#define FILE_MAX_TAGS 8
-
-/**
- * @brief Success status of file operation
- */
-enum FileError {
-  FERR_NONE,          /*!< No error */
-  FERR_INVALID_PATH,  /*!< Invalid path to file */
-  FERR_ACCESS_DENIED, /*!< Denied access to file */
-  FERR_INVALID_TAG,   /*!< Tag contains invalid characters */
-  FERR_TOO_MANY_TAGS  /*!< Number of tags exceeds FILE_MAX_TAGS */
-};
-
-typedef int file_error_t;
+#include "Files/Error.h"
 
 /**
  * @brief Description of action that should be performed on file
@@ -61,48 +44,15 @@ typedef struct {
 typedef struct {
   LinkedListNode as_node;
 
-  char* path;       /*!< Full path to file */
-  time_t timestamp; /*!< File creation date */
+  char* path;                 /*!< Full path to file */
+  time_t real_timestamp;      /*!< File creation date */
+  time_t override_timestamp;  /*!< Timestamp used for file name */
 
   unsigned tag_count;         /*!< Number of tags added to file */
   char* tags[FILE_MAX_TAGS];  /*!< File tags */
 
   FileChanges changes;  /*!< Changes to be applied */
 } IndexedFile;
-
-/**
- * @brief Description of all files found in source directory
- */
-typedef struct {
-  LinkedList files; /*!< List of indexed files */
-
-  int override_timestamp;
-  time_t override_value;
-} FileIndex;
-
-/**
- * @brief Initialize empty file index
- */
-void file_index_init(
-    FileIndex* index,
-    int override_timestamp,
-    ... /* time_t override_value */
-);
-
-/**
- * @brief Remove all files from index
- */
-void file_index_clear(FileIndex* index);
-
-/**
- * @brief Add file at `path` to index with given root node
- *
- * @return FileError status
- */
-file_error_t file_add_to_index(
-  FileIndex* index, /*!< [inout] List of indexed files */
-  const char* path  /*!< [in]    Path to indexed file */
-);
 
 /**
  * @brief Generate new name for file based on timestamp and tags
@@ -120,6 +70,20 @@ unsigned long file_generate_name(
   unsigned long buf_length,   /*!< [in]  Length of `name_buf` */
   char name_buf[]             /*!< [out] Output buffer for file name */
 );
+
+/**
+ * @brief Initialize file from path
+ * 
+ * @return FERR_NONE on success
+ *         FERR_INVALID_VALUE on invalid path,
+ *         FERR_ACCESS_DENIED if path cannot be accessed
+ */
+file_error_t file_init(IndexedFile* file, const char* path);
+
+/**
+ * @brief Deallocate resources used by IndexedFile
+ */
+void file_cleanup(IndexedFile* file);
 
 /**
  * @brief Add tag to list of file tags. Duplicate tags are ignored.

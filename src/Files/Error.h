@@ -1,0 +1,33 @@
+/**
+ * @file Error.h
+ * @author MeerkatBoss (solodovnikov.ia@phystech.su)
+ *
+ * @brief File operation error codes
+ *
+ * @version 0.1
+ * @date 2024-09-04
+ *
+ * @copyright Copyright MeerkatBoss (c) 2024
+ */
+#ifndef __FILES_ERROR_H
+#define __FILES_ERROR_H
+
+/**
+ * @brief Maximum number of tags that can be attached to file
+ */
+#define FILE_MAX_TAGS 8
+
+/**
+ * @brief Success status of file operation
+ */
+enum FileError {
+  FERR_NONE,          /*!< No error */
+  FERR_INVALID_VALUE, /*!< Invalid parameter value */
+  FERR_ACCESS_DENIED, /*!< Denied access to file */
+  FERR_INVALID_TAG,   /*!< Tag contains invalid characters */
+  FERR_TOO_MANY_TAGS  /*!< Number of tags exceeds FILE_MAX_TAGS */
+};
+
+typedef int file_error_t;
+
+#endif /* Error.h */ 
