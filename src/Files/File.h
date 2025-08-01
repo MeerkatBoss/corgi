@@ -128,4 +128,30 @@ unsigned long file_generate_name(
  */
 file_error_t file_add_tag(IndexedFile* file, const char* tag);
 
+/**
+ * @brief Get unique sorted tags from file
+ * 
+ * @return Number of unique tags. If this exceeds `unique_count`, returned list of tags
+ *         is truncated to fit in buffer.
+ */
+size_t get_unique_tags(
+  const IndexedFile* file,      /*!< [in]  Target file */
+  size_t unique_count,          /*!< [in]  Maximum amount of unique tags to store in buffer */
+  const char* unique_tags[]     /*!< [out] Buffer for unique tags. Ignored if `NULL` */
+);
+
+/**
+ * @brief Remove provided tag from file
+ * 
+ * @return Number of removed tags
+ *
+ * @note This operation does not preserve order of tags
+ */
+int file_remove_tag(IndexedFile* file, const char* tag);
+
+/**
+ * @brief Remove all tags from file
+ */
+void file_clear_tags(IndexedFile* file);
+
 #endif /* File.h */

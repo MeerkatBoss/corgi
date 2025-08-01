@@ -39,10 +39,7 @@ void file_index_clear(FileIndex* index) {
   while ((node = list_pop_front(&index->files))) {
     IndexedFile* file = (IndexedFile*) node;
 
-    for (size_t i = 0; i < FILE_MAX_TAGS; ++i) {
-      free(file->tags[i]);
-    }
-
+    file_clear_tags(file);
     free(file->path);
     free(file);
   }
@@ -93,26 +90,6 @@ static int string_compare(const void* lhs, const void* rhs) {
   return strcmp(*(const char* const*) lhs, *(const char* const*) rhs);
 }
 
-static void get_unique_tags(
-  const IndexedFile* file,
-  const char* unique_tags[],
-  size_t* unique_count
-) {
-  const char* tags[FILE_MAX_TAGS];
-  for (size_t i = 0; i < file->tag_count; ++i) {
-    tags[i] = file->tags[i];
-  }
-  qsort(tags, file->tag_count, sizeof(tags[0]), string_compare);
-  size_t count = 0;
-  for (size_t i = 0; i < file->tag_count; ++i) {
-    if (i == 0 || strcmp(tags[i], tags[i-1]) != 0) {
-      unique_tags[count] = tags[i];
-      count++;
-    }
-  }
-  *unique_count = count;
-}
-
 static const char* get_extension(const char* path) {
   const char* last_dot = strrchr(path, '.');
   const char* last_slash = strrchr(path, '/');
@@ -150,8 +127,7 @@ unsigned long file_generate_name(
 
   /* Get unique sorted tags */
   const char* tags[FILE_MAX_TAGS];
-  size_t unique_count = 0;
-  get_unique_tags(file, tags, &unique_count);
+  size_t unique_count = get_unique_tags(file, FILE_MAX_TAGS, tags);
 
   /* Get file extension */
   const char* extension = get_extension(file->path);
@@ -195,4 +171,53 @@ file_error_t file_add_tag(IndexedFile* file, const char* tag) {
   ++file->tag_count;
 
   return FERR_NONE;
+}
+
+size_t get_unique_tags(
+  const IndexedFile* file,
+  size_t unique_count,
+  const char* unique_tags[]
+) {
+  const char* tags[FILE_MAX_TAGS];
+  for (size_t i = 0; i < file->tag_count; ++i) {
+    tags[i] = file->tags[i];
+  }
+  qsort(tags, file->tag_count, sizeof(tags[0]), string_compare);
+  size_t count = 0;
+  for (size_t i = 0; i < file->tag_count; ++i) {
+    if (i == 0 || strcmp(tags[i], tags[i-1]) != 0) {
+      if (unique_tags != NULL && count < unique_count) {
+        unique_tags[count] = tags[i];
+      }
+      count++;
+    }
+  }
+  return count;
+}
+
+int file_remove_tag(IndexedFile* file, const char* tag) {
+  int removed_count = 0;
+  size_t i = 0;
+  
+  while (i < file->tag_count) {
+    if (strcmp(file->tags[i], tag) != 0) {
+      i++;
+      continue;
+    }
+
+    free(file->tags[i]);
+    file->tags[i] = file->tags[file->tag_count - 1];
+    file->tags[file->tag_count - 1] = NULL;
+    file->tag_count--;
+    removed_count++;
+  }
+  
+  return removed_count;
+}
+
+void file_clear_tags(IndexedFile* file) {
+  for (size_t i = 0; i < file->tag_count; ++i) {
+    free(file->tags[i]);
+    file->tags[i] = NULL;
+  }
 }
