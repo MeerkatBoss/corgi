@@ -75,31 +75,63 @@ static const char* get_extension(const char* path) {
   return extension;
 }
 
+static size_t pad_with_zeros(unsigned value, unsigned padding, size_t buf_size, char* buf) {
+  unsigned value_copy = value;
+  unsigned length = 0;
+  while (value_copy > 0) {
+    length++;
+    value_copy /= 10;
+  }
+  if (length == 0) {
+    length = 1;
+  }
+  if (length < padding) {
+    length = padding;
+  }
+
+  if (length >= buf_size) {
+    return 0;
+  }
+
+  buf[length] = '\0';
+  for (size_t i = length; i > 0; --i) {
+    buf[i - 1] = value % 10;
+    value /= 10;
+  }
+
+  return length;
+}
+
 unsigned long file_generate_name(
   const IndexedFile* file,
+  unsigned short index,
   unsigned long buf_length,
   char name_buf[]
 ) {
   enum {
-    DATE_BUFSIZE = 11 /* YYYY-MM-DD\0 */
+    DATE_BUFSIZE = 11, /* YYYY-MM-DD\0 */
+    INDEX_BUFSIZE = 6, /* XXXXX\0*/
+    INDEX_PADDING = 3
   };
   /* Format timestamp */
   const struct tm* time = gmtime(&file->override_timestamp);
   char date_buf[DATE_BUFSIZE];
   strftime(date_buf, DATE_BUFSIZE, "%Y-%m-%d", time);
 
-  /* Get unique sorted tags */
   const char* tags[FILE_MAX_TAGS];
   size_t unique_count = get_unique_tags(file, FILE_MAX_TAGS, tags);
 
-  /* Get file extension */
   const char* extension = get_extension(file->path);
+
+  char index_buf[INDEX_BUFSIZE];
+  pad_with_zeros(index, INDEX_PADDING, INDEX_BUFSIZE, index_buf);
 
   /* Catenate all parts of file name */
   unsigned long total_len = 0;
 
   name_buf[0] = '\0';
   total_len = append_string(name_buf, buf_length, date_buf);
+  total_len = append_string(name_buf, buf_length, index_buf);
 
   /* Add tags, separated by underscores */
   for (size_t i = 0; i < unique_count; ++i) {

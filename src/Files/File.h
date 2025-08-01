@@ -55,23 +55,6 @@ typedef struct {
 } IndexedFile;
 
 /**
- * @brief Generate new name for file based on timestamp and tags
- *
- * @note
- * File name has the following format:
- * `YYYY-MM-DD_underscore_separated_tags.extension`
- * Tags are sorted alphabetically and duplicate tags are removed.
- *
- * @return Length of generated name. If this length exceeds buffer length,
- *         the name is truncated to fit.
- */
-unsigned long file_generate_name(
-  const IndexedFile* file,    /*!< [in]  Target file */
-  unsigned long buf_length,   /*!< [in]  Length of `name_buf` */
-  char name_buf[]             /*!< [out] Output buffer for file name */
-);
-
-/**
  * @brief Initialize file from path
  * 
  * @return FERR_NONE on success
@@ -117,5 +100,24 @@ int file_remove_tag(IndexedFile* file, const char* tag);
  * @brief Remove all tags from file
  */
 void file_clear_tags(IndexedFile* file);
+
+/**
+ * @brief Generate new name for file based on timestamp, index and tags
+ *
+ * @note
+ * File name has the following format:
+ * `YYYY-MM-DD_XXX_underscore_separated_tags.extension`
+ * Tags are sorted alphabetically and duplicate tags are removed.
+ *
+ * @return Length of generated name. If this length exceeds buffer length,
+ *         the name is truncated to fit.
+ */
+unsigned long file_generate_name(
+  const IndexedFile* file,    /*!< [in]  Target file */
+  unsigned short file_index,  /*!< [in]  Index of file in list */
+  unsigned long buf_length,   /*!< [in]  Length of `name_buf` */
+  char name_buf[]             /*!< [out] Output buffer for file name */
+);
+
 
 #endif /* File.h */
