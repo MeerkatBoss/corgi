@@ -71,6 +71,10 @@ void file_cleanup(IndexedFile* file);
 /**
  * @brief Add tag to list of file tags. Duplicate tags are ignored.
  *
+ * @return FERR_NONE on success,
+ *         FERR_INVALID_VALUE if tag contains invalid characters,
+ *         FERR_INVALID_OPERATION if number of tags exceeds FILE_MAX_TAGS
+ *
  * @note Tags can only contain lowercase latin letters and dash symbol '-'
  */
 file_error_t file_add_tag(IndexedFile* file, const char* tag);
@@ -118,6 +122,5 @@ unsigned long file_generate_name(
   unsigned long buf_length,   /*!< [in]  Length of `name_buf` */
   char name_buf[]             /*!< [out] Output buffer for file name */
 );
-
 
 #endif /* File.h */

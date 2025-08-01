@@ -21,11 +21,10 @@
  * @brief Success status of file operation
  */
 enum FileError {
-  FERR_NONE,          /*!< No error */
-  FERR_INVALID_VALUE, /*!< Invalid parameter value */
-  FERR_ACCESS_DENIED, /*!< Denied access to file */
-  FERR_INVALID_TAG,   /*!< Tag contains invalid characters */
-  FERR_TOO_MANY_TAGS  /*!< Number of tags exceeds FILE_MAX_TAGS */
+  FERR_NONE,              /*!< No error */
+  FERR_INVALID_VALUE,     /*!< Invalid parameter value */
+  FERR_INVALID_OPERATION, /*!< Operation is not allowed */
+  FERR_ACCESS_DENIED      /*!< Denied access to file */
 };
 
 typedef int file_error_t;

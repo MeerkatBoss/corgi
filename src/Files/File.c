@@ -11,6 +11,7 @@
 
 #include "Common/List.h"
 #include "Common/Strings.h"
+#include "Files/Error.h"
 
 file_error_t file_init(IndexedFile* file, const char* path) {
   /* Check if file exists and is readable */
@@ -154,12 +155,12 @@ file_error_t file_add_tag(IndexedFile* file, const char* tag) {
     int is_dash = (*ch == '-');
 
     if (!is_lower_alpha && !is_dash) {
-      return FERR_INVALID_TAG;
+      return FERR_INVALID_VALUE;
     }
   }
 
   if (file->tag_count == FILE_MAX_TAGS) {
-    return FERR_TOO_MANY_TAGS;
+    return FERR_INVALID_OPERATION;
   }
 
   file->tags[file->tag_count] = copy_string(tag);
