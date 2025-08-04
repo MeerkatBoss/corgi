@@ -132,6 +132,7 @@ unsigned long file_generate_name(
 
   name_buf[0] = '\0';
   total_len = append_string(name_buf, buf_length, date_buf);
+  total_len = append_string(name_buf, buf_length, "_");
   total_len = append_string(name_buf, buf_length, index_buf);
 
   /* Add tags, separated by underscores */
