@@ -22,6 +22,7 @@ void file_index_clear(FileIndex* index) {
     file_cleanup(file);
     free(file);
   }
+  index->file_count = 0;
 }
 
 file_error_t file_add_to_index(FileIndex* index, const char* path) {
@@ -98,7 +99,7 @@ file_error_t file_index_read_directory(FileIndex* index, const char* source_path
   closedir(dir);
 
   /* If error occurred, rollback indexing */
-  if (result == FERR_NONE) {
+  if (result != FERR_NONE) {
     file_index_clear(index);
   }
   return result;
