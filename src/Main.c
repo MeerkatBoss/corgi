@@ -2,31 +2,39 @@
 #include <stdio.h>
 
 #include "Common/List.h"
-
-typedef struct {
-  LinkedListNode as_node;
-  int value;
-} IntListNode;
-
-static void int_list_print(const LinkedList* list) {
-  LIST_CONST_FOREACH(node, *list) {
-    const IntListNode* int_node = (const IntListNode*) node;
-    printf("%d ", int_node->value);
-  }
-  puts("");
-}
+#include "Files/Error.h"
+#include "Files/File.h"
+#include "Files/Index.h"
 
 int main() {
-  LinkedList int_list;
-  list_init(&int_list);
+  const char* directory = ".tmp";
+  const char* tags[] = {"first", "second", "third"};
+  file_error_t result = FERR_NONE;
+  FileIndex index;
+  file_index_init(&index);
 
-  IntListNode nodes[5];
-  for (int i = 0; i < 5; ++i) {
-    list_node_init(&nodes[i].as_node);
-    nodes[i].value = i;
-    list_push_back(&int_list, &nodes[i].as_node);
+  result = file_index_read_directory(&index, directory);
+  if (result != FERR_NONE) {
+    return result;
   }
-  int_list_print(&int_list);
+  printf("Found %zu files\n", index.file_count);
 
-  return 0;
+  enum {
+    PATH_MAX = 256
+  };
+  char buffer[PATH_MAX] = "";
+  unsigned short file_id = 0;
+  LIST_FOREACH(node, index.files) {
+    IndexedFile* file = (IndexedFile*) node;
+    for (size_t i = 0; i <= file_id; ++i) {
+      file_add_tag(file, tags[i]);
+    }
+    size_t length = file_generate_name(file, file_id, PATH_MAX, buffer);
+    if (length > PATH_MAX) {
+      printf("%s...\n", buffer);
+    } else {
+      puts(buffer);
+    }
+    ++file_id;
+  }
 }
