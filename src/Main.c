@@ -16,13 +16,12 @@ static void int_list_print(const LinkedList* list) {
   puts("");
 }
 
-int main()
-{
+int main() {
   LinkedList int_list;
   list_init(&int_list);
 
   IntListNode nodes[5];
-  for (size_t i = 0; i < 5; ++i) {
+  for (int i = 0; i < 5; ++i) {
     list_node_init(&nodes[i].as_node);
     nodes[i].value = i;
     list_push_back(&int_list, &nodes[i].as_node);

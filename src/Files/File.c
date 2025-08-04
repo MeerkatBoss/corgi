@@ -68,10 +68,10 @@ static const char* get_extension(const char* path) {
    * C standards and instead invokes undefined behavior, which means that both
    * pointers have to be checked for equality with NULL before comparison.
    */
-  if (has_dot && has_slash && last_dot > last_slash) {
-    extension = last_dot + 1;
-  } else if (has_dot && !has_slash) {
-    extension = last_dot + 1;
+  if (has_dot) {
+    if (!has_slash || last_dot > last_slash) {
+      extension = last_dot + 1;
+    }
   }
   return extension;
 }
@@ -96,7 +96,7 @@ static size_t pad_with_zeros(unsigned value, unsigned padding, size_t buf_size, 
 
   buf[length] = '\0';
   for (size_t i = length; i > 0; --i) {
-    buf[i - 1] = value % 10;
+    buf[i - 1] = (char) ('0' + value % 10);
     value /= 10;
   }
 
