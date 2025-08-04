@@ -32,13 +32,27 @@ void file_index_init(FileIndex* index);
 void file_index_clear(FileIndex* index);
 
 /**
- * @brief Add file at `path` to index with given root node
+ * @brief Add file at `path` to index. Files in index are sorted by `real_timestamp` field.
  *
- * @return FileError status
+ * @return FERR_NONE on success,
+ *         FERR_INVALID_VALUE if the path is invalid,
+ *         FERR_ACCESS_DENIED if the file cannot be accessed
  */
 file_error_t file_add_to_index(
   FileIndex* index, /*!< [inout] List of indexed files */
   const char* path  /*!< [in]    Path to indexed file */
+);
+
+/**
+ * @brief Add all files from directory to index
+ * 
+ * @return FERR_NONE on success,
+ *         FERR_INVALID_VALUE if the path is invalid,
+ *         FERR_ACCESS_DENIED if directory or its contents cannot be accessed
+ */
+file_error_t file_index_read_directory(
+  FileIndex* index,
+  const char* source_path
 );
 
 #endif /* Index.h */
