@@ -116,6 +116,8 @@ run: $(BINDIR)/$(PROJECT)
 debug: $(BINDIR)/$(PROJECT)
 	@gdb --args $< $(ARGS)
 
+check:
+	@clang-tidy -p $(BUILDDIR) $(SOURCES) -- $(CFLAGS) $(INCFLAGS)
 
 include $(DEPS)
 
