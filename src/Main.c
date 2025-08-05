@@ -1,12 +1,14 @@
 #include <assert.h>
 #include <stdio.h>
+#include <getopt.h>
 
 #include "Common/List.h"
 #include "Files/Error.h"
 #include "Files/File.h"
 #include "Files/Index.h"
+#include "Cli.h"
 
-int main() {
+int test_tmp(void) {
   const char* directory = ".tmp";
   const char* tags[] = {"first", "second", "third"};
   file_error_t result = FERR_NONE;
@@ -37,4 +39,27 @@ int main() {
     }
     ++file_id;
   }
+  return 0;
+}
+
+int main(int argc, char** argv) {
+  CliArgs args;
+  int parse_result = parse_args(argc, argv, &args);
+  if (parse_result != 0) {
+    return 1;
+  }
+
+  printf("source = %s\n", args.source_dir);
+  printf("target = %s\n", args.target_dir);
+  for (size_t i = 0; i < args.tag_count; ++i) {
+    printf("+tag '%s'\n", args.tags[i]);
+  }
+  if (args.dry_run) {
+    puts("dry run");
+  }
+  if (args.verbose) {
+    puts("verbose");
+  }
+
+  return 0;
 }

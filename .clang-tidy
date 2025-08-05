@@ -29,5 +29,11 @@ CheckOptions:
     value: 'CamelCase'
   - key: readability-identifier-naming.StaticVariablePrefix
     value: 's'
+  - key: readability-identifier-naming.StaticVariableCase
+    value: 'CamelCase'
+  - key: readability-identifier-naming.StaticConstantCase
+    value: 'CamelCase'
+  - key: readability-identifier-naming.GlobalConstantCase
+    value: 'CamelCase'
   - key: bugprone-easily-swappable-parameters.MinimumLength
     value: 4
