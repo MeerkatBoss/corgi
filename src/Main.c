@@ -1,6 +1,5 @@
 #include <assert.h>
 #include <stdio.h>
-#include <getopt.h>
 
 #include "Common/List.h"
 #include "Files/Error.h"
@@ -35,6 +34,55 @@ static const char* directory_error_to_string(file_error_t error) {
   }
 }
 
+static file_error_t execute_operations(
+  FileIndex* index,
+  const char* target_dir,
+  const TransactionOptions* options
+) {
+  file_error_t result = FERR_NONE;
+  FileTransaction transaction;
+  int transaction_initialized = 0;
+
+  result = file_transaction_init(&transaction, target_dir);
+  if (result != FERR_NONE) {
+    fprintf(stderr, "Error: Failed to initialize transaction for target '%s': %s\n",
+            target_dir, directory_error_to_string(result));
+    goto cleanup;
+  }
+  transaction_initialized = 1;
+
+  result = file_transaction_prepare(&transaction, index, options);
+  if (result != FERR_NONE) {
+    fprintf(stderr, "Error: Failed to prepare file operations: %s\n",
+            directory_error_to_string(result));
+    goto cleanup;
+  }
+
+  result = file_transaction_commit(&transaction, options);
+  if (result != FERR_NONE) {
+    fprintf(stderr, "Error: Failed to commit operations: %s\n",
+            directory_error_to_string(result));
+    fprintf(stderr, "Rolling back changes...\n");
+    file_error_t rollback_result = file_transaction_rollback(&transaction, options);
+    if (rollback_result != FERR_NONE) {
+      fprintf(stderr, "Error: Failed to rollback operations: %s\n",
+              file_error_to_string(rollback_result));
+    }
+    goto cleanup;
+  }
+
+  if (options->verbose || options->dry_run) {
+    printf("Successfully processed %zu files.\n", index->file_count);
+  }
+
+cleanup:
+  if (transaction_initialized) {
+    file_transaction_cleanup(&transaction);
+  }
+
+  return result;
+}
+
 int main(int argc, char** argv) {
   CliArgs args = {0};
   int parse_result = parse_args(argc, argv, &args);
@@ -44,9 +92,7 @@ int main(int argc, char** argv) {
 
   file_error_t result = FERR_NONE;
   FileIndex index;
-  FileTransaction transaction;
   int index_initialized = 0;
-  int transaction_initialized = 0;
 
   file_index_init(&index);
   index_initialized = 1;
@@ -79,43 +125,14 @@ int main(int argc, char** argv) {
     file->changes.action = FACT_COPY;
   }
 
-  result = file_transaction_init(&transaction, args.target_dir);
-  if (result != FERR_NONE) {
-    fprintf(stderr, "Error: Failed to initialize transaction for target '%s': %s\n",
-            args.target_dir, directory_error_to_string(result));
-    goto cleanup;
-  }
-  transaction_initialized = 1;
-
   TransactionOptions options = {
     .dry_run = args.dry_run,
     .verbose = args.verbose
   };
 
-  result = file_transaction_prepare(&transaction, &index, &options);
-  if (result != FERR_NONE) {
-    fprintf(stderr, "Error: Failed to prepare file operations: %s\n",
-            directory_error_to_string(result));
-    goto cleanup;
-  }
-
-  result = file_transaction_commit(&transaction, &options);
-  if (result != FERR_NONE) {
-    fprintf(stderr, "Error: Failed to commit operations: %s\n",
-            directory_error_to_string(result));
-    fprintf(stderr, "Rolling back changes...\n");
-    file_transaction_rollback(&transaction, &options);
-    goto cleanup;
-  }
-
-  if (args.verbose || args.dry_run) {
-    printf("Successfully processed %zu files.\n", index.file_count);
-  }
+  result = execute_operations(&index, args.target_dir, &options);
 
 cleanup:
-  if (transaction_initialized) {
-    file_transaction_cleanup(&transaction);
-  }
   if (index_initialized) {
     file_index_clear(&index);
   }
