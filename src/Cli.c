@@ -134,15 +134,15 @@ int parse_args(int argc, char** argv, CliArgs* parsed) {
       if (optopt == 0 && long_options[option_index].name != NULL) {
         fprintf(
           stderr,
-          "Missing argument for option '--%s'. Use -h for help.\n",
+          "Missing argument for option '--%s'.\n",
           long_options[option_index].name
         );
       } else {
-        fprintf(stderr, "Missing argument for option '-%c'. Use -h for help.\n", optopt);
+        fprintf(stderr, "Missing argument for option '-%c'.\n", optopt);
       }
       return -1;
     case '?':
-      fprintf(stderr, "Invalid option '-%c'. Use -h for help.\n", optopt);
+      fprintf(stderr, "Invalid option '-%c'.\n", optopt);
       return -1;
     default:
       fprintf(stderr, "?? ERROR: getopt_long returned 0%o ??\n", opt);
