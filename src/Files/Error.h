@@ -29,4 +29,11 @@ enum FileError {
 
 typedef int file_error_t;
 
+/**
+ * @brief Convert file error code to human-readable string
+ *
+ * @return Error message string
+ */
+const char* file_error_to_string(file_error_t error);
+
 #endif /* Error.h */ 
