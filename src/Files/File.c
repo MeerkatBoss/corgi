@@ -189,11 +189,9 @@ size_t file_get_unique_tags(
   }
   qsort((void*) tags, file->tag_count, sizeof(tags[0]), string_compare);
   size_t count = 0;
-  for (size_t i = 0; i < file->tag_count; ++i) {
+  for (size_t i = 0; i < file->tag_count && count < unique_count; ++i) {
     if (i == 0 || strcmp(tags[i], tags[i-1]) != 0) {
-      if (unique_tags != NULL && count < unique_count) {
-        unique_tags[count] = tags[i];
-      }
+      unique_tags[count] = tags[i];
       count++;
     }
   }
