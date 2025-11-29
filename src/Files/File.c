@@ -120,7 +120,7 @@ unsigned long file_generate_name(
   strftime(date_buf, DATE_BUFSIZE, "%Y-%m-%d", time);
 
   const char* tags[FILE_MAX_TAGS];
-  size_t unique_count = get_unique_tags(file, FILE_MAX_TAGS, tags);
+  size_t unique_count = file_get_unique_tags(file, FILE_MAX_TAGS, tags);
 
   const char* extension = get_extension(file->path);
 
@@ -178,7 +178,7 @@ file_error_t file_add_tag(IndexedFile* file, const char* tag) {
   return FERR_NONE;
 }
 
-size_t get_unique_tags(
+size_t file_get_unique_tags(
   const IndexedFile* file,
   size_t unique_count,
   const char* unique_tags[]
