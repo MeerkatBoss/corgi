@@ -98,6 +98,12 @@ int parse_args(int argc, char** argv, CliArgs* parsed) {
   get_long_options(long_options);
   get_optstring(optstring, sizeof(optstring));
 
+  parsed->source_dir = NULL;
+  parsed->target_dir = NULL;
+  parsed->tag_count = 0;
+  parsed->dry_run = 0;
+  parsed->verbose = 0;
+
   while ((opt = getopt_long(argc, argv, optstring, long_options, &option_index)) != -1) {
     switch (opt) {
     case 't':
