@@ -55,6 +55,12 @@ static file_error_t execute_operations(
   if (result != FERR_NONE) {
     fprintf(stderr, "Error: Failed to prepare file operations: %s\n",
             directory_error_to_string(result));
+    fprintf(stderr, "Rolling back changes...\n");
+    file_error_t rollback_result = file_transaction_rollback(&transaction, options);
+    if (rollback_result != FERR_NONE) {
+      fprintf(stderr, "Error: Failed to rollback operations: %s\n",
+              file_error_to_string(rollback_result));
+    }
     goto cleanup;
   }
 
@@ -62,12 +68,8 @@ static file_error_t execute_operations(
   if (result != FERR_NONE) {
     fprintf(stderr, "Error: Failed to commit operations: %s\n",
             directory_error_to_string(result));
-    fprintf(stderr, "Rolling back changes...\n");
-    file_error_t rollback_result = file_transaction_rollback(&transaction, options);
-    if (rollback_result != FERR_NONE) {
-      fprintf(stderr, "Error: Failed to rollback operations: %s\n",
-              file_error_to_string(rollback_result));
-    }
+    fprintf(stderr, "Warning: Cannot safely rollback after commit failure.\n");
+    fprintf(stderr, "Target files have been preserved to prevent data loss.\n");
     goto cleanup;
   }
 
