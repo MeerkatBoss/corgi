@@ -69,6 +69,15 @@ file_error_t file_init(IndexedFile* file, const char* path);
 void file_cleanup(IndexedFile* file);
 
 /**
+ * @brief Validate tag string format
+ *
+ * @return 0 if tag is invalid, nonzero if it is valid
+ *
+ * @note Tags can only contain lowercase latin letters and dash symbol '-'
+ */
+int file_tag_is_valid(const char* tag);
+
+/**
  * @brief Add tag to list of file tags. Duplicate tags are ignored.
  *
  * @return FERR_NONE on success,

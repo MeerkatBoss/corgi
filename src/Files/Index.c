@@ -104,3 +104,35 @@ file_error_t file_index_read_directory(FileIndex* index, const char* source_path
   }
   return result;
 }
+
+int file_index_add_tags(FileIndex* index, size_t tag_count, const char* tags[]) {
+  if (tag_count > FILE_MAX_TAGS) {
+    return FERR_INVALID_OPERATION;
+  }
+
+  for (size_t i = 0; i < tag_count; ++i) {
+    if (!file_tag_is_valid(tags[i])) {
+      return FERR_INVALID_VALUE;
+    }
+  }
+
+  LIST_FOREACH(node, index->files) {
+    IndexedFile* file = (IndexedFile*) node;
+
+    /* Check that all tags can be added */
+    if (file->tag_count + tag_count > FILE_MAX_TAGS) {
+      return FERR_INVALID_OPERATION;
+    }
+  }
+
+  LIST_FOREACH(node, index->files) {
+    IndexedFile* file = (IndexedFile*) node;
+
+    for (size_t i = 0; i < tag_count; ++i) {
+      /* After all checks, this cannot fail */
+      file_add_tag(file, tags[i]);
+    }
+  }
+
+  return FERR_NONE;
+}

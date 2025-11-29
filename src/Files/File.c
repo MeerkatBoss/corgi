@@ -150,14 +150,22 @@ unsigned long file_generate_name(
   return total_len;
 }
 
-file_error_t file_add_tag(IndexedFile* file, const char* tag) {
+int file_tag_is_valid(const char* tag) {
   for (const char* ch = tag; *ch != '\0'; ++ch) {
     int is_lower_alpha = ('a' <= *ch && *ch <= 'z');
     int is_dash = (*ch == '-');
 
     if (!is_lower_alpha && !is_dash) {
-      return FERR_INVALID_VALUE;
+      return 0;
     }
+  }
+
+  return 1;
+}
+
+file_error_t file_add_tag(IndexedFile* file, const char* tag) {
+  if (!file_tag_is_valid(tag)) {
+    return FERR_INVALID_VALUE;
   }
 
   if (file->tag_count == FILE_MAX_TAGS) {

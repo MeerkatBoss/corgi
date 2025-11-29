@@ -67,18 +67,15 @@ int main(int argc, char** argv) {
     goto cleanup;
   }
 
-  /* Apply tags from CLI to all indexed files */
+  result = file_index_add_tags(&index, args.tag_count, args.tags);
+  if (result != FERR_NONE) {
+    fprintf(stderr, "Error: Failed to add tags to files: %s\n",
+            file_tag_error_to_string(result));
+    goto cleanup;
+  }
+
   LIST_FOREACH(node, index.files) {
     IndexedFile* file = (IndexedFile*) node;
-
-    for (size_t i = 0; i < args.tag_count; ++i) {
-      result = file_add_tag(file, args.tags[i]);
-      if (result != FERR_NONE) {
-        fprintf(stderr, "Warning: Failed to add tag '%s' to file '%s': %s\n",
-                args.tags[i], file->path, file_tag_error_to_string(result));
-      }
-    }
-
     file->changes.action = FACT_COPY;
   }
 
