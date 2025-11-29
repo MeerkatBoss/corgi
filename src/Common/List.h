@@ -30,7 +30,7 @@ static inline void list_node_init(LinkedListNode* node) {
 }
 
 static inline int list_node_is_null(LinkedListNode* node) {
-  assert( (node->prev == NULL) == (node->prev == NULL) );
+  assert( (node->prev == NULL) == (node->next == NULL) );
   return node->prev == NULL;
 }
 

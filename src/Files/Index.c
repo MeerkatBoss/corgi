@@ -105,7 +105,7 @@ file_error_t file_index_read_directory(FileIndex* index, const char* source_path
   return result;
 }
 
-int file_index_add_tags(FileIndex* index, size_t tag_count, const char* tags[]) {
+file_error_t file_index_add_tags(FileIndex* index, size_t tag_count, const char* tags[]) {
   if (tag_count > FILE_MAX_TAGS) {
     return FERR_INVALID_OPERATION;
   }

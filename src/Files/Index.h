@@ -62,7 +62,7 @@ file_error_t file_index_read_directory(
  *         FERR_INVALID_VALUE if one of the tags is invalid
  *         FERR_INVALID_OPERATION if one of the files exceeds tag limit
  */
-int file_index_add_tags(
+file_error_t file_index_add_tags(
   FileIndex* index,
   size_t tag_count,
   const char* tags[]

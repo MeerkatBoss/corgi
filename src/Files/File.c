@@ -225,4 +225,5 @@ void file_clear_tags(IndexedFile* file) {
     free(file->tags[i]);
     file->tags[i] = NULL;
   }
+  file->tag_count = 0;
 }

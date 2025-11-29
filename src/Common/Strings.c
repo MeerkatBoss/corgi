@@ -9,7 +9,7 @@ char* copy_string(const char* str) {
     return NULL;
   }
   size_t len = strlen(str) + 1;
-  char* copy = malloc(len);
+  char* copy = calloc(len, 1);
   if (copy != NULL) {
     memcpy(copy, str, len);
   }

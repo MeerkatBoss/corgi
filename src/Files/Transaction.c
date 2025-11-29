@@ -277,16 +277,16 @@ static file_error_t prepare_dry_run_operation(
   }
 
   op->state = state;
-  
+
   if (options->verbose) {
-    if (state == FACT_COPY || state == FACT_MOVE) {
+    if (state == PREP_STATE_COPY || state == PREP_STATE_MOVE) {
       printf("  [DRY RUN] %s: %s -> %s\n", action_name, file->path, op->target_path);
     }
     else {
       printf("  [DRY RUN] %s: %s\n", action_name, file->path);
     }
   }
-  
+
   return FERR_NONE;
 }
 
@@ -502,7 +502,7 @@ file_error_t file_transaction_commit(
     case PREP_STATE_IGNORE:
       if (options->verbose && op->state == PREP_STATE_COPY) {
         printf(
-          "  Nothing to commit for %s\n (%s)",
+          "  Nothing to commit for %s (%s)\n",
           op->source_file->path,
           op->state == PREP_STATE_COPY ? "copied" : "ignored"
         );
