@@ -113,7 +113,7 @@ unsigned long file_generate_name(
   const IndexedFile* file,
   unsigned short index,
   unsigned long buf_length,
-  char name_buf[]
+  char* name_buf
 ) {
   PANIC_IF_NULL(file);
   PANIC_IF_NULL(name_buf);

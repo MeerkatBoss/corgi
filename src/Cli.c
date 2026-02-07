@@ -27,7 +27,7 @@ enum {
   CLI_OPTION_COUNT = sizeof(CliOptions)/sizeof(*CliOptions)
 };
 
-static void get_long_options(struct option* long_options) {
+static void get_long_options(struct option long_options[]) {
   for (size_t i = 0; i < CLI_OPTION_COUNT; ++i) {
     long_options[i].name = CliOptions[i].long_name;
     long_options[i].has_arg = CliOptions[i].arg_name ? required_argument : no_argument;

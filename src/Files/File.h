@@ -129,7 +129,7 @@ unsigned long file_generate_name(
   const IndexedFile* file,    /*!< [in]  Target file */
   unsigned short file_index,  /*!< [in]  Index of file in list */
   unsigned long buf_length,   /*!< [in]  Length of `name_buf` */
-  char name_buf[]             /*!< [out] Output buffer for file name */
+  char* name_buf              /*!< [out] Output buffer for file name */
 );
 
 #endif /* File.h */
