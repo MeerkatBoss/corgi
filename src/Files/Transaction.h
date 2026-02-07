@@ -35,7 +35,7 @@ enum PreparedOperationState {
   PREP_STATE_IGNORE     /*!< Operation ignored */
 };
 
-typedef int prepared_operation_state_t;
+typedef enum PreparedOperationState prepared_operation_state_t;
 
 /**
  * @brief Prepared operation for a single file

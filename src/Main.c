@@ -16,6 +16,8 @@ static const char* file_tag_error_to_string(file_error_t error) {
     return "tag contains invalid characters (only lowercase letters and '-' allowed)";
   case FERR_INVALID_OPERATION:
     return "maximum number of tags exceeded (limit: 8 tags per file)";
+  case FERR_ACCESS_DENIED:
+  case FERR_ALREADY_EXISTS:
   default:
     return "unknown error";
   }
@@ -29,6 +31,8 @@ static const char* directory_error_to_string(file_error_t error) {
     return "target directory is not found";
   case FERR_ACCESS_DENIED:
     return "permission denied";
+  case FERR_INVALID_OPERATION:
+  case FERR_ALREADY_EXISTS:
   default:
     return "unknown error";
   }

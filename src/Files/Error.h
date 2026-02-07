@@ -28,7 +28,7 @@ enum FileError {
   FERR_ALREADY_EXISTS     /*!< Target file already exists */
 };
 
-typedef int file_error_t;
+typedef enum FileError file_error_t;
 
 /**
  * @brief Convert file error code to human-readable string

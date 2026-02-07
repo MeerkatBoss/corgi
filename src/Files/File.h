@@ -29,7 +29,7 @@ enum FileAction {
   FACT_DELETE   /*!< File should be deleted from source directory */
 };
 
-typedef int file_action_t;
+typedef enum FileAction file_action_t;
 
 /**
  * @brief Description of pending changes to file

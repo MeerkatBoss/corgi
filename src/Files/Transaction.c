@@ -540,6 +540,7 @@ static file_error_t commit_single_operation(
     return commit_copy_operation(op, options);
   case PREP_STATE_IGNORE:
     return commit_ignore_operation(op, options);
+  case PREP_STATE_NONE:
   default:
     return FERR_NONE;
   }
@@ -622,6 +623,7 @@ file_error_t file_transaction_rollback(
       }
       break;
 
+    case PREP_STATE_NONE:
     case PREP_STATE_DELETE:
     case PREP_STATE_IGNORE:
     default:
