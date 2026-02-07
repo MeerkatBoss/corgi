@@ -123,7 +123,11 @@ void file_transaction_cleanup(FileTransaction* transaction) {
   transaction->operation_count = 0;
 }
 
-static file_error_t copy_file(const char* source_path, const char* dest_path) {
+static file_error_t copy_file(
+  const char* source_path,
+  const char* dest_path,
+  const TransactionOptions* options
+) {
   if (source_path == NULL || dest_path == NULL) {
     return FERR_INVALID_VALUE;
   }
@@ -132,7 +136,7 @@ static file_error_t copy_file(const char* source_path, const char* dest_path) {
   FILE* source = NULL;
   FILE* dest = NULL;
 
-  /* Open source and destination files */
+  /* Open source file */
   source = fopen(source_path, "rb");
   if (source == NULL) {
     if (errno == ENOENT) {
@@ -142,6 +146,17 @@ static file_error_t copy_file(const char* source_path, const char* dest_path) {
     result = FERR_ACCESS_DENIED;
     goto quit;
   }
+
+  /* Forbid overwriting existing file unless force flag is set */
+  if (!options->force) {
+    struct stat st;
+    if (stat(dest_path, &st) == 0) {
+      result = FERR_ALREADY_EXISTS;
+      goto quit;
+    }
+  }
+
+  /* Open destination file */
   dest = fopen(dest_path, "wb");
   if (dest == NULL) {
     if (errno == ENOENT) {
@@ -190,9 +205,11 @@ quit:
 static file_error_t link_or_copy_file(
   const char* source_path,
   const char* dest_path,
+  const TransactionOptions* options,
   int* used_hardlink
 ) {
-  if (source_path == NULL || dest_path == NULL || used_hardlink == NULL) {
+  if (source_path == NULL || dest_path == NULL ||
+      options == NULL || used_hardlink == NULL) {
     return FERR_INVALID_VALUE;
   }
 
@@ -203,6 +220,10 @@ static file_error_t link_or_copy_file(
     return FERR_NONE;
   }
 
+  if (errno == EEXIST) {
+    return FERR_ALREADY_EXISTS;
+  }
+
   if (errno != EXDEV && errno != EPERM) {
     if (errno == ENOENT) {
       return FERR_INVALID_VALUE;
@@ -210,7 +231,7 @@ static file_error_t link_or_copy_file(
     return FERR_ACCESS_DENIED;
   }
 
-  return copy_file(source_path, dest_path);
+  return copy_file(source_path, dest_path, options);
 }
 
 static file_error_t build_target_path(
@@ -251,7 +272,7 @@ static file_error_t prepare_dry_run_operation(
 ) {
   prepared_operation_state_t state;
   const char* action_name;
-  
+
   switch (file->changes.action) {
   case FACT_IGNORE:
     state = PREP_STATE_IGNORE;
@@ -273,6 +294,14 @@ static file_error_t prepare_dry_run_operation(
     return FERR_INVALID_OPERATION;
   }
 
+  /* Check for file collision in dry-run mode (for copy/move operations) */
+  if ((state == PREP_STATE_COPY || state == PREP_STATE_MOVE) && !options->force) {
+    struct stat st;
+    if (stat(op->target_path, &st) == 0) {
+      return FERR_ALREADY_EXISTS;
+    }
+  }
+
   op->state = state;
 
   if (options->verbose) {
@@ -292,16 +321,16 @@ static file_error_t prepare_copy_operation(
   const IndexedFile* file,
   const TransactionOptions* options
 ) {
-  file_error_t result = copy_file(file->path, op->target_path);
+  file_error_t result = copy_file(file->path, op->target_path, options);
   if (result != FERR_NONE) {
     return result;
   }
-  
+
   op->state = PREP_STATE_COPY;
   if (options->verbose) {
     printf("  Prepared copy: %s -> %s\n", file->path, op->target_path);
   }
-  
+
   return FERR_NONE;
 }
 
@@ -311,17 +340,17 @@ static file_error_t prepare_move_operation(
   const TransactionOptions* options
 ) {
   int used_hardlink = 0;
-  file_error_t result = link_or_copy_file(file->path, op->target_path, &used_hardlink);
+  file_error_t result = link_or_copy_file(file->path, op->target_path, options, &used_hardlink);
   if (result != FERR_NONE) {
     return result;
   }
-  
+
   op->state = PREP_STATE_MOVE;
   if (options->verbose) {
     const char* method = used_hardlink ? "hardlink" : "copy";
     printf("  Prepared move (%s): %s -> %s\n", method, file->path, op->target_path);
   }
-  
+
   return FERR_NONE;
 }
 

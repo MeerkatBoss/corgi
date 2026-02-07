@@ -19,6 +19,8 @@ const char* file_error_to_string(file_error_t error) {
     return "Invalid operation";
   case FERR_ACCESS_DENIED:
     return "Access denied";
+  case FERR_ALREADY_EXISTS:
+    return "File already exists";
   default:
     return "Unknown error";
   }

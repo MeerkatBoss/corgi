@@ -54,7 +54,7 @@ static file_error_t execute_operations(
   result = file_transaction_prepare(&transaction, index, options);
   if (result != FERR_NONE) {
     fprintf(stderr, "Error: Failed to prepare file operations: %s\n",
-            directory_error_to_string(result));
+            file_error_to_string(result));
     fprintf(stderr, "Rolling back changes...\n");
     file_error_t rollback_result = file_transaction_rollback(&transaction, options);
     if (rollback_result != FERR_NONE) {
@@ -130,7 +130,8 @@ int main(int argc, char** argv) {
 
   TransactionOptions options = {
     .dry_run = args.dry_run,
-    .verbose = args.verbose
+    .verbose = args.verbose,
+    .force = args.force
   };
 
   result = execute_operations(&index, args.target_dir, &options);

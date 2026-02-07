@@ -21,6 +21,7 @@
 typedef struct {
   int dry_run;    /*!< If true, operations are simulated without actual file changes */
   int verbose;    /*!< If true, print detailed operation information */
+  int force;      /*!< If true, allow overwriting existing files */
 } TransactionOptions;
 
 /**

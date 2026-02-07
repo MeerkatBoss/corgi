@@ -26,6 +26,7 @@ typedef struct {
   size_t tag_count;               /*!< Number of tags */
   int verbose;                    /*!< Verbose output flag */
   int dry_run;                    /*!< Dry-run mode flag */
+  int force;                      /*!< Force overwrite flag */
 } CliArgs;
 
 /**

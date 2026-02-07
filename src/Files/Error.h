@@ -24,7 +24,8 @@ enum FileError {
   FERR_NONE,              /*!< No error */
   FERR_INVALID_VALUE,     /*!< Invalid parameter value */
   FERR_INVALID_OPERATION, /*!< Operation is not allowed */
-  FERR_ACCESS_DENIED      /*!< Denied access to file */
+  FERR_ACCESS_DENIED,     /*!< Denied access to file */
+  FERR_ALREADY_EXISTS     /*!< Target file already exists */
 };
 
 typedef int file_error_t;

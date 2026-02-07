@@ -18,6 +18,7 @@ static const CliOptionDef CliOptions[] = {
   {"source",  's', "DIR",   "Source directory (required)"},
   {"target",  'd', "DIR",   "Target directory (required)"},
   {"verbose", 'v',  NULL,   "Print source and generated target file names"},
+  {"force",   'f',  NULL,   "Allow overwriting existing files in target directory"},
   {"dry-run",   0,  NULL,   "Do not copy files"},
   {"help",    'h',  NULL,   "Print this help message"},
 };
@@ -103,6 +104,7 @@ int parse_args(int argc, char** argv, CliArgs* parsed) {
   parsed->tag_count = 0;
   parsed->dry_run = 0;
   parsed->verbose = 0;
+  parsed->force = 0;
 
   while ((opt = getopt_long(argc, argv, optstring, long_options, &option_index)) != -1) {
     switch (opt) {
@@ -123,6 +125,9 @@ int parse_args(int argc, char** argv, CliArgs* parsed) {
       break;
     case 'v':
       parsed->verbose = 1;
+      break;
+    case 'f':
+      parsed->force = 1;
       break;
     case 0:
       parsed->dry_run = 1;
