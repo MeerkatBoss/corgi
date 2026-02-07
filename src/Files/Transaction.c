@@ -438,6 +438,84 @@ quit:
   return result;
 }
 
+static file_error_t commit_move_operation(
+  PreparedOperation* op,
+  const TransactionOptions* options
+) {
+  int unlink_result = unlink(op->source_file->path);
+  if (unlink_result != 0) {
+    if (options->verbose) {
+      fprintf(stderr, "  Failed to remove source: %s\n", op->source_file->path);
+    }
+    return FERR_ACCESS_DENIED;
+  }
+  if (options->verbose) {
+    printf("  Committed move: %s\n", op->source_file->path);
+  }
+  return FERR_NONE;
+}
+
+static file_error_t commit_delete_operation(
+  PreparedOperation* op,
+  const TransactionOptions* options
+) {
+  int unlink_result = unlink(op->source_file->path);
+  if (unlink_result != 0) {
+    if (errno == ENOENT) {
+      if (options->verbose) {
+        fprintf(stderr, "  No such file: %s\n", op->source_file->path);
+      }
+      return FERR_INVALID_VALUE;
+    } else {
+      if (options->verbose) {
+        fprintf(stderr, "  Failed to delete: %s\n", op->source_file->path);
+      }
+      return FERR_ACCESS_DENIED;
+    }
+  } else if (options->verbose) {
+    printf("  Committed delete: %s\n", op->source_file->path);
+  }
+  return FERR_NONE;
+}
+
+static file_error_t commit_copy_operation(
+  PreparedOperation* op,
+  const TransactionOptions* options
+) {
+  if (options->verbose) {
+    printf("  Nothing to commit for %s (copied)\n", op->source_file->path);
+  }
+  return FERR_NONE;
+}
+
+static file_error_t commit_ignore_operation(
+  PreparedOperation* op,
+  const TransactionOptions* options
+) {
+  if (options->verbose) {
+    printf("  Nothing to commit for %s (ignored)\n", op->source_file->path);
+  }
+  return FERR_NONE;
+}
+
+static file_error_t commit_single_operation(
+  PreparedOperation* op,
+  const TransactionOptions* options
+) {
+  switch (op->state) {
+  case PREP_STATE_MOVE:
+    return commit_move_operation(op, options);
+  case PREP_STATE_DELETE:
+    return commit_delete_operation(op, options);
+  case PREP_STATE_COPY:
+    return commit_copy_operation(op, options);
+  case PREP_STATE_IGNORE:
+    return commit_ignore_operation(op, options);
+  default:
+    return FERR_NONE;
+  }
+}
+
 file_error_t file_transaction_commit(
   FileTransaction* transaction,
   const TransactionOptions* options
@@ -457,57 +535,12 @@ file_error_t file_transaction_commit(
     printf("Committing %zu operations...\n", transaction->operation_count);
   }
 
-  /* Execute the commit phase for each prepared operation */
   LIST_FOREACH(node, transaction->operations) {
     PreparedOperation* op = (PreparedOperation*) node;
-    int unlink_result = 0;
 
-    switch (op->state) {
-    case PREP_STATE_MOVE:
-      unlink_result = unlink(op->source_file->path);
-      if (unlink_result != 0) {
-        if (options->verbose) {
-          fprintf(stderr, "  Failed to remove source: %s\n", op->source_file->path);
-        }
-        return FERR_ACCESS_DENIED;
-      }
-      if (options->verbose) {
-        printf("  Committed move: %s\n", op->source_file->path);
-      }
-      break;
-
-    case PREP_STATE_DELETE:
-      unlink_result = unlink(op->source_file->path);
-      if (unlink_result != 0) {
-        if (errno == ENOENT) {
-          if (options->verbose) {
-            fprintf(stderr, "  No such file: %s\n", op->source_file->path);
-          }
-          return FERR_INVALID_VALUE;
-        } else {
-          if (options->verbose) {
-            fprintf(stderr, "  Failed to delete: %s\n", op->source_file->path);
-          }
-          return FERR_ACCESS_DENIED;
-        }
-      } else if (options->verbose) {
-        printf("  Committed delete: %s\n", op->source_file->path);
-      }
-      break;
-
-    case PREP_STATE_COPY:
-    case PREP_STATE_IGNORE:
-      if (options->verbose && op->state == PREP_STATE_COPY) {
-        printf(
-          "  Nothing to commit for %s (%s)\n",
-          op->source_file->path,
-          op->state == PREP_STATE_COPY ? "copied" : "ignored"
-        );
-      }
-      break;
-
-    default:
-      break;
+    file_error_t result = commit_single_operation(op, options);
+    if (result != FERR_NONE) {
+      return result;
     }
   }
 
