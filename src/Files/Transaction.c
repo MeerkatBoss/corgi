@@ -223,9 +223,6 @@ static file_error_t build_target_path(
   size_t total_len = dir_len + name_len + 2;
 
   *target_path = calloc(total_len, sizeof(char));
-  if (*target_path == NULL) {
-    return FERR_ACCESS_DENIED;
-  }
 
   (*target_path)[0] = '\0';
   append_string(*target_path, total_len, target_dir);
