@@ -9,13 +9,18 @@
 
 #include "Files/Error.h"
 #include "Files/File.h"
+#include "Common/Panic.h"
 #include "Common/Strings.h"
 
 void file_index_init(FileIndex* index) {
+  PANIC_IF_NULL(index);
+
   list_init(&index->files);
 }
 
 void file_index_clear(FileIndex* index) {
+  PANIC_IF_NULL(index);
+
   LinkedListNode* node = NULL;
   while ((node = list_pop_front(&index->files))) {
     IndexedFile* file = (IndexedFile*) node;
@@ -26,8 +31,12 @@ void file_index_clear(FileIndex* index) {
 }
 
 file_error_t file_add_to_index(FileIndex* index, const char* path) {
+  PANIC_IF_NULL(index);
+  PANIC_IF_NULL(path);
+
   /* Initialize IndexedFile */
   IndexedFile* file = (IndexedFile*) calloc(1, sizeof(*file));
+  PANIC_ON_BAD_ALLOC(file);
   file_error_t res = file_init(file, path);
   if (res != FERR_NONE) {
     free(file);
@@ -50,6 +59,9 @@ file_error_t file_add_to_index(FileIndex* index, const char* path) {
 }
 
 file_error_t file_index_read_directory(FileIndex* index, const char* source_path) {
+  PANIC_IF_NULL(index);
+  PANIC_IF_NULL(source_path);
+
   enum {
     MAX_FILENAME = 256
   };
@@ -66,6 +78,7 @@ file_error_t file_index_read_directory(FileIndex* index, const char* source_path
   size_t base_length = strlen(source_path);
   size_t full_length = base_length + MAX_FILENAME + 2;
   char* full_path = calloc(full_length, 1);
+  PANIC_ON_BAD_ALLOC(full_path);
   memcpy(full_path, source_path, base_length);
   full_path[base_length] = '/';
   full_path[base_length + 1] = '\0';
@@ -106,6 +119,9 @@ file_error_t file_index_read_directory(FileIndex* index, const char* source_path
 }
 
 file_error_t file_index_add_tags(FileIndex* index, size_t tag_count, const char* tags[]) {
+  PANIC_IF_NULL(index);
+  PANIC_IF_NULL(tags);
+
   if (tag_count > FILE_MAX_TAGS) {
     return FERR_INVALID_OPERATION;
   }

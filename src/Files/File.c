@@ -10,10 +10,14 @@
 #include <unistd.h>
 
 #include "Common/List.h"
+#include "Common/Panic.h"
 #include "Common/Strings.h"
 #include "Files/Error.h"
 
 file_error_t file_init(IndexedFile* file, const char* path) {
+  PANIC_IF_NULL(file);
+  PANIC_IF_NULL(path);
+
   /* Check if file exists and is readable */
   if (access(path, R_OK) != 0) {
     if (errno == ENOENT || errno == ENOTDIR) {
@@ -42,6 +46,8 @@ file_error_t file_init(IndexedFile* file, const char* path) {
 }
 
 void file_cleanup(IndexedFile* file) {
+  PANIC_IF_NULL(file);
+
   if (!list_node_is_null(&file->as_node)) {
     list_take_node(&file->as_node);
   }
@@ -109,6 +115,9 @@ unsigned long file_generate_name(
   unsigned long buf_length,
   char name_buf[]
 ) {
+  PANIC_IF_NULL(file);
+  PANIC_IF_NULL(name_buf);
+
   enum {
     DATE_BUFSIZE = 11, /* YYYY-MM-DD\0 */
     INDEX_BUFSIZE = 6, /* XXXXX\0*/
@@ -151,6 +160,8 @@ unsigned long file_generate_name(
 }
 
 int file_tag_is_valid(const char* tag) {
+  PANIC_IF_NULL(tag);
+
   for (const char* ch = tag; *ch != '\0'; ++ch) {
     int is_lower_alpha = ('a' <= *ch && *ch <= 'z');
     int is_dash = (*ch == '-');
@@ -164,6 +175,9 @@ int file_tag_is_valid(const char* tag) {
 }
 
 file_error_t file_add_tag(IndexedFile* file, const char* tag) {
+  PANIC_IF_NULL(file);
+  PANIC_IF_NULL(tag);
+
   if (!file_tag_is_valid(tag)) {
     return FERR_INVALID_VALUE;
   }
@@ -183,6 +197,9 @@ size_t file_get_unique_tags(
   size_t unique_count,
   const char* unique_tags[]
 ) {
+  PANIC_IF_NULL(file);
+  PANIC_IF_NULL(unique_tags);
+
   const char* tags[FILE_MAX_TAGS];
   for (size_t i = 0; i < file->tag_count; ++i) {
     tags[i] = file->tags[i];
@@ -199,6 +216,9 @@ size_t file_get_unique_tags(
 }
 
 int file_remove_tag(IndexedFile* file, const char* tag) {
+  PANIC_IF_NULL(file);
+  PANIC_IF_NULL(tag);
+
   int removed_count = 0;
   size_t i = 0;
   
@@ -219,6 +239,8 @@ int file_remove_tag(IndexedFile* file, const char* tag) {
 }
 
 void file_clear_tags(IndexedFile* file) {
+  PANIC_IF_NULL(file);
+
   for (size_t i = 0; i < file->tag_count; ++i) {
     free(file->tags[i]);
     file->tags[i] = NULL;

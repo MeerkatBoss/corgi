@@ -4,15 +4,16 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "Common/Panic.h"
+
 char* copy_string(const char* str) {
   if (str == NULL) {
     return NULL;
   }
   size_t len = strlen(str) + 1;
   char* copy = calloc(len, 1);
-  if (copy != NULL) {
-    memcpy(copy, str, len);
-  }
+  PANIC_ON_BAD_ALLOC(copy);
+  memcpy(copy, str, len);
   return copy;
 }
 

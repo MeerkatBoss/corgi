@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 
+#include "Common/Panic.h"
 #include "Common/Strings.h"
 #include "Files/Error.h"
 #include "Files/File.h"
@@ -77,9 +78,8 @@ file_error_t file_transaction_init(
   FileTransaction* transaction,
   const char* target_dir
 ) {
-  if (transaction == NULL || target_dir == NULL) {
-    return FERR_INVALID_VALUE;
-  }
+  PANIC_IF_NULL(transaction);
+  PANIC_IF_NULL(target_dir);
 
   list_init(&transaction->operations);
   transaction->operation_count = 0;
@@ -128,10 +128,6 @@ static file_error_t copy_file(
   const char* dest_path,
   const TransactionOptions* options
 ) {
-  if (source_path == NULL || dest_path == NULL) {
-    return FERR_INVALID_VALUE;
-  }
-
   file_error_t result = FERR_NONE;
   FILE* source = NULL;
   FILE* dest = NULL;
@@ -208,11 +204,6 @@ static file_error_t link_or_copy_file(
   const TransactionOptions* options,
   int* used_hardlink
 ) {
-  if (source_path == NULL || dest_path == NULL ||
-      options == NULL || used_hardlink == NULL) {
-    return FERR_INVALID_VALUE;
-  }
-
   *used_hardlink = 0;
 
   if (link(source_path, dest_path) == 0) {
@@ -244,6 +235,7 @@ static file_error_t build_target_path(
   size_t total_len = dir_len + name_len + 2;
 
   *target_path = calloc(total_len, sizeof(char));
+  PANIC_ON_BAD_ALLOC(*target_path);
 
   (*target_path)[0] = '\0';
   append_string(*target_path, total_len, target_dir);
@@ -407,9 +399,9 @@ file_error_t file_transaction_prepare(
   const FileIndex* index,
   const TransactionOptions* options
 ) {
-  if (transaction == NULL || index == NULL || options == NULL) {
-    return FERR_INVALID_VALUE;
-  }
+  PANIC_IF_NULL(transaction);
+  PANIC_IF_NULL(index);
+  PANIC_IF_NULL(options);
 
   if (options->verbose) {
     printf("Preparing %zu operations...\n", index->file_count);
@@ -424,7 +416,8 @@ file_error_t file_transaction_prepare(
     const IndexedFile* file = (const IndexedFile*) node;
     
     op = calloc(1, sizeof(*op));
-    
+    PANIC_ON_BAD_ALLOC(op);
+
     list_node_init(&op->as_node);
     op->source_file = file;
 
@@ -550,9 +543,8 @@ file_error_t file_transaction_commit(
   FileTransaction* transaction,
   const TransactionOptions* options
 ) {
-  if (transaction == NULL || options == NULL) {
-    return FERR_INVALID_VALUE;
-  }
+  PANIC_IF_NULL(transaction);
+  PANIC_IF_NULL(options);
 
   if (options->dry_run) {
     if (options->verbose) {
@@ -584,9 +576,8 @@ file_error_t file_transaction_rollback(
   FileTransaction* transaction,
   const TransactionOptions* options
 ) {
-  if (transaction == NULL || options == NULL) {
-    return FERR_INVALID_VALUE;
-  }
+  PANIC_IF_NULL(transaction);
+  PANIC_IF_NULL(options);
 
   if (options->dry_run) {
     if (options->verbose) {
