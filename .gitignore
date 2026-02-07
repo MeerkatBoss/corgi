@@ -2,3 +2,7 @@ compile_commands.json
 .cache/
 build/
 .tmp/
+doc/
+.vscode/
+.cursor
+CLAUDE.md
