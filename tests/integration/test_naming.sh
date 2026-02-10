@@ -54,6 +54,21 @@ assert_contains "Tags sorted alphabetically" \
     "$filename" "apple_middle_zebra"
 finish_test || exit 1
 
+test_group "Duplicate tags"
+rm -rf "$SOURCE_DIR" "$TARGET_DIR"
+mkdir -p "$SOURCE_DIR" "$TARGET_DIR"
+create_test_file "$SOURCE_DIR/test.txt"
+
+assert_success "Just works" \
+    "$BINARY" --source "$SOURCE_DIR" --target "$TARGET_DIR" \
+              --tag "vacation" --tag "vacation" --tag "summer"
+
+target_file=$(find "$TARGET_DIR" -type f | head -1)
+filename=$(basename "$target_file")
+
+assert_contains_count "Duplicate tag removed" "$filename" "vacation" 1
+finish_test || exit 1
+
 test_group "Preserve extension"
 rm -rf "$SOURCE_DIR" "$TARGET_DIR"
 mkdir -p "$SOURCE_DIR" "$TARGET_DIR"
