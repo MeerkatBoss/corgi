@@ -7,7 +7,7 @@ BINARY="${CORGI_BINARY:-build/bin/corgi}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 colors=no
-case "$TERM" in
+case "${TERM:-}" in
     xterm-color|*-256color) colors=yes;;
 esac
 
