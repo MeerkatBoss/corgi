@@ -21,3 +21,7 @@ and this project adheres to
 - Alphabetical sorting of tags in filenames
 - Doxygen documentation configuration
 - clang-tidy static analysis configuration
+- Automatic compiler selection for building
+
+#### Changed
+- Portable build process
