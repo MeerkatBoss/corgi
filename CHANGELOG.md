@@ -23,6 +23,8 @@ and this project adheres to
 - clang-tidy static analysis configuration
 - Automatic compiler selection for building
 - Github CI to check successful builds
+- Automated integration testing
+- Github CI to run tests
 
 #### Changed
 - Portable build process
