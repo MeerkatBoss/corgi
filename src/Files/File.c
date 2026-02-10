@@ -140,19 +140,19 @@ unsigned long file_generate_name(
   unsigned long total_len = 0;
 
   name_buf[0] = '\0';
-  total_len = append_string(name_buf, buf_length, date_buf);
-  total_len = append_string(name_buf, buf_length, "_");
+  append_string(name_buf, buf_length, date_buf);
+  append_string(name_buf, buf_length, "_");
   total_len = append_string(name_buf, buf_length, index_buf);
 
   /* Add tags, separated by underscores */
   for (size_t i = 0; i < unique_count; ++i) {
-    total_len = append_string(name_buf, buf_length, "_");
+    append_string(name_buf, buf_length, "_");
     total_len = append_string(name_buf, buf_length, tags[i]);
   }
 
   /* Add extension if present */
   if (extension[0] != '\0') {
-    total_len = append_string(name_buf, buf_length, ".");
+    append_string(name_buf, buf_length, ".");
     total_len = append_string(name_buf, buf_length, extension);
   }
 

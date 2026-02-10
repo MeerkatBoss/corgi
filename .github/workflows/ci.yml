@@ -75,6 +75,92 @@ jobs:
           gmake clean
           CC=${{ matrix.cc }} TARGET=Release gmake all
 
+  test-linux:
+    name: Integration Tests (Linux)
+    runs-on: ubuntu-latest
+    needs: build-linux-macos
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc make
+
+    - name: Build with AddressSanitizer
+      run: |
+        make clean
+        TARGET=Debug make all
+
+    - name: Run integration tests
+      run: make test-integration
+      env:
+        TEST_DIR: /tmp/corgi-tests
+
+    - name: Upload test logs on failure
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-logs-linux
+        path: /tmp/corgi-tests/
+        retention-days: 7
+
+  test-macos:
+    name: Integration Tests (macOS)
+    runs-on: macos-latest
+    needs: build-linux-macos
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: brew install make
+
+    - name: Build with AddressSanitizer
+      run: |
+        make clean
+        TARGET=Debug make all
+
+    - name: Run integration tests
+      run: make test-integration
+      env:
+        TEST_DIR: /tmp/corgi-tests
+
+    - name: Upload test logs on failure
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-logs-macos
+        path: /tmp/corgi-tests/
+        retention-days: 7
+
+  test-freebsd:
+    name: Integration Tests (FreeBSD)
+    runs-on: ubuntu-latest
+    needs: build-freebsd
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run tests in FreeBSD VM
+      uses: vmactions/freebsd-vm@v1
+      with:
+        usesh: true
+        mem: 2048
+        copyback: false
+        prepare: |
+          pkg install -y llvm gmake
+          pw useradd -n testuser -m -s /bin/sh
+        run: |
+          chown -R testuser:testuser .
+          su testuser -c "gmake clean"
+          su testuser -c "CC=clang TARGET=Debug gmake all"
+          su testuser -c "gmake test-integration TEST_DIR=/tmp/corgi-tests"
+
   lint:
     name: Clang-Tidy
     runs-on: ubuntu-latest

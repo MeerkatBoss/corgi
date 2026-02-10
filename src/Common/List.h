@@ -118,7 +118,13 @@ static inline LinkedListNode* list_pop_front(LinkedList* list) {
   if (list_is_empty(list)) {
     return NULL;
   }
-  return list_take_node(list->root.next);
+  LinkedListNode* node = list_take_node(list->root.next);
+
+  /* Placate clang-tidy: node is guaranteed to not be in list anymore */
+  assert(list->root.next != node);
+  assert(list->root.prev != node);
+
+  return node;
 }
 
 /**
@@ -130,7 +136,13 @@ static inline LinkedListNode* list_pop_back(LinkedList* list) {
   if (list_is_empty(list)) {
     return NULL;
   }
-  return list_take_node(list->root.prev);
+  LinkedListNode* node = list_take_node(list->root.prev);
+
+  /* Placate clang-tidy: node is guaranteed to not be in list anymore */
+  assert(list->root.next != node);
+  assert(list->root.prev != node);
+
+  return node;
 }
 
 /**

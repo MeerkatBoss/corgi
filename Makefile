@@ -92,12 +92,20 @@ $(warning "Unknown compiler, build potentially not supported")
 	CWARN := $(CWARN_COMMON)
 endif
 
+SANITIZERS := address,alignment,bool,bounds,enum,float-cast-overflow,${strip \
+	}float-divide-by-zero,integer-divide-by-zero,nonnull-attribute,null,${strip \
+  }return,returns-nonnull-attribute,shift,signed-integer-overflow,${strip \
+  }undefined,unreachable,vla-bound,vptr
+
+# Add leak sanitizer only on non-macOS platforms
+# (on macOS, leak detection is included in AddressSanitizer)
+UNAME_S := $(shell uname -s)
+ifneq ($(UNAME_S),Darwin)
+	SANITIZERS := $(SANITIZERS),leak
+endif
+
 CDEBUG := -D_DEBUG -ggdb -fstack-protector -fstrict-overflow \
-	-fno-omit-frame-pointer \
-	-fsanitize=address,alignment,bool,bounds,enum,float-cast-overflow,${strip \
-	}float-divide-by-zero,integer-divide-by-zero,leak,nonnull-attribute,${strip \
-	}null,return,returns-nonnull-attribute,shift,${strip \
-	}signed-integer-overflow,undefined,unreachable,vla-bound,vptr
+	-fno-omit-frame-pointer -fsanitize=$(SANITIZERS)
 
 CMACHINE :=
 
@@ -199,5 +207,27 @@ check:
 
 -include $(DEPS)
 
+# ==============================================================================
+# Testing Targets
+# ==============================================================================
+
+TEST_INTEGRATION_DIR := $(TESTDIR)/integration
+TEST_DIR ?= .tmp/tests
+
+test: test-integration
+
+test-setup:
+	@mkdir -p $(TEST_DIR)
+
+test-clean:
+	@echo $(call color,BLUE,\> Cleaning test artifacts)
+	@rm -rf $(TEST_DIR)
+
+test-integration: $(BINDIR)/$(PROJECT) test-setup
+	@echo $(call color,BROWN,Running integration tests...)
+	@TEST_DIR=$(TEST_DIR) \
+	 CORGI_BINARY=$(BINDIR)/$(PROJECT) \
+	 /bin/sh $(TEST_INTEGRATION_DIR)/runner.sh $(TESTS)
+
 .PHONY: all remake clean cleaner run init debug doc view-doc check \
-        compiler-info
+        compiler-info test test-integration test-clean test-setup
