@@ -75,16 +75,34 @@ main() {
 
     setup_test_env
 
-    for test_file in "$SCRIPT_DIR"/test_*.sh; do
-        if [ -f "$test_file" ]; then
+    # If test names are provided as arguments, run only those tests
+    if [ $# -gt 0 ]; then
+        for test_name in "$@"; do
+            test_file="$SCRIPT_DIR/test_${test_name}.sh"
+            if [ ! -f "$test_file" ]; then
+                printf "${RED}Error: Test file '%s' not found${NC}\n" "test_${test_name}.sh"
+                exit 1
+            fi
             TOTAL_TESTS=$((TOTAL_TESTS + 1))
             if run_test_file "$test_file"; then
                 PASSED_TESTS=$((PASSED_TESTS + 1))
             else
                 FAILED_TESTS=$((FAILED_TESTS + 1))
             fi
-        fi
-    done
+        done
+    else
+        # Run all tests
+        for test_file in "$SCRIPT_DIR"/test_*.sh; do
+            if [ -f "$test_file" ]; then
+                TOTAL_TESTS=$((TOTAL_TESTS + 1))
+                if run_test_file "$test_file"; then
+                    PASSED_TESTS=$((PASSED_TESTS + 1))
+                else
+                    FAILED_TESTS=$((FAILED_TESTS + 1))
+                fi
+            fi
+        done
+    fi
 
     echo "============================"
     echo "Tests run: $TOTAL_TESTS"
