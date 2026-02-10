@@ -51,7 +51,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        compiler: [gcc, clang]
+        include:
+          - compiler: gcc
+            package: gcc
+            cc: gcc
+          - compiler: clang
+            package: llvm
+            cc: clang
 
     steps:
     - name: Checkout code
@@ -64,10 +70,10 @@ jobs:
         mem: 2048
         copyback: false
         prepare: |
-          pkg install -y ${{ matrix.compiler }} gmake
+          pkg install -y ${{ matrix.package }} gmake
         run: |
           gmake clean
-          CC=${{ matrix.compiler }} TARGET=Release gmake all
+          CC=${{ matrix.cc }} TARGET=Release gmake all
 
   lint:
     name: Clang-Tidy
