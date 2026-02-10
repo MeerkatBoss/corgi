@@ -65,6 +65,20 @@ assert_file_exists() {
     fi
 }
 
+assert_directory_exists() {
+    local description="$1"
+    local directory="$2"
+
+    if [ -d "$directory" ]; then
+        _pass $description
+        return 0
+    else
+        _fail $description
+        echo "      Directory not found: $directory"
+        return 1
+    fi
+}
+
 assert_file_not_exists() {
     local description="$1"
     local file="$2"
@@ -75,6 +89,20 @@ assert_file_not_exists() {
     else
         _fail $description
         echo "      File should not exist: $file"
+        return 1
+    fi
+}
+
+assert_directory_not_exists() {
+    local description="$1"
+    local directory="$2"
+
+    if [ ! -d "$directory" ]; then
+        _pass $description
+        return 0
+    else
+        _fail $description
+        echo "      Directory should not exist: $directory"
         return 1
     fi
 }
