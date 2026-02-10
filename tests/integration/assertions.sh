@@ -165,16 +165,6 @@ assert_file_count() {
     fi
 }
 
-setup_fixture() {
-    local fixture_name="$1"
-    local target_dir="$2"
-
-    mkdir -p "$target_dir"
-    if [ -d "$SCRIPT_DIR/fixtures/$fixture_name" ]; then
-        cp -r "$SCRIPT_DIR/fixtures/$fixture_name/"* "$target_dir/" 2>/dev/null || true
-    fi
-}
-
 create_test_file() {
     local filepath="$1"
     local content="${2:-test content}"
