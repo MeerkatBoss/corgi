@@ -59,6 +59,9 @@ static file_error_t execute_operations(
   if (result != FERR_NONE) {
     fprintf(stderr, "Error: Failed to prepare file operations: %s\n",
             file_error_to_string(result));
+    if (result == FERR_ALREADY_EXISTS) {
+      fprintf(stderr, "Hint: use --force to allow overwriting of files\n");
+    }
     fprintf(stderr, "Rolling back changes...\n");
     file_error_t rollback_result = file_transaction_rollback(&transaction, options);
     if (rollback_result != FERR_NONE) {
