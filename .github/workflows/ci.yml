@@ -1,0 +1,97 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build-linux-macos:
+    name: Build (${{ matrix.os }}, ${{ matrix.compiler }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        compiler: [gcc, clang]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install dependencies (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc clang make
+
+    - name: Install dependencies (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        brew install gcc make
+
+    - name: Build with ${{ matrix.compiler }}
+      run: |
+        make clean
+        CC=${{ matrix.compiler }} make all
+      env:
+        TARGET: Release
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: corgi-${{ matrix.os }}-${{ matrix.compiler }}
+        path: build/bin/corgi
+        retention-days: 7
+
+  build-freebsd:
+    name: Build (FreeBSD, ${{ matrix.compiler }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - compiler: gcc
+            package: gcc
+            cc: gcc
+          - compiler: clang
+            package: llvm
+            cc: clang
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Build in FreeBSD VM
+      uses: vmactions/freebsd-vm@v1
+      with:
+        usesh: true
+        mem: 2048
+        copyback: false
+        prepare: |
+          pkg install -y ${{ matrix.package }} gmake
+        run: |
+          gmake clean
+          CC=${{ matrix.cc }} TARGET=Release gmake all
+
+  lint:
+    name: Clang-Tidy
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang clang-tidy make bear
+
+    - name: Generate compile_commands.json
+      run: |
+        make clean
+        bear -- make all
+
+    - name: Run clang-tidy
+      run: make check
