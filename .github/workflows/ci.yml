@@ -154,10 +154,12 @@ jobs:
         copyback: false
         prepare: |
           pkg install -y llvm gmake
+          pw useradd -n testuser -m -s /bin/sh
         run: |
-          gmake clean
-          CC=clang TARGET=Debug gmake all
-          gmake test-integration TEST_DIR=/tmp/corgi-tests
+          chown -R testuser:testuser .
+          su testuser -c "gmake clean"
+          su testuser -c "CC=clang TARGET=Debug gmake all"
+          su testuser -c "gmake test-integration TEST_DIR=/tmp/corgi-tests"
 
   lint:
     name: Clang-Tidy
