@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    name: Build (${{ matrix.compiler }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc clang make
+
+    - name: Build with ${{ matrix.compiler }}
+      run: |
+        make clean
+        CC=${{ matrix.compiler }} make all
+      env:
+        TARGET: Release
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: corgi-${{ matrix.compiler }}
+        path: build/bin/corgi
+        retention-days: 7
+
+  lint:
+    name: Clang-Tidy
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang clang-tidy make bear
+
+    - name: Generate compile_commands.json
+      run: |
+        make clean
+        bear -- make all
+
+    - name: Run clang-tidy
+      run: make check
