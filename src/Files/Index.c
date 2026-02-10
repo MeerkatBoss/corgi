@@ -16,6 +16,7 @@ void file_index_init(FileIndex* index) {
   PANIC_IF_NULL(index);
 
   list_init(&index->files);
+  index->file_count = 0;
 }
 
 void file_index_clear(FileIndex* index) {
