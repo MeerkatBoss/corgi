@@ -77,6 +77,24 @@ assert_success "Accepts --dry-run" \
 assert_directory_not_exists "Target directory not created" "$TARGET_DIR"
 finish_test || exit 1
 
+test_group "Verbose mode"
+rm -rf "$SOURCE_DIR" "$TARGET_DIR"
+mkdir -p "$SOURCE_DIR" "$TARGET_DIR"
+create_test_file "$SOURCE_DIR/file1.txt"
+create_test_file "$SOURCE_DIR/file2.txt"
+
+output=$("$BINARY" --source "$SOURCE_DIR" \
+                   --target "$TARGET_DIR" \
+                   --tag "verbose" --verbose 2>&1)
+
+assert_contains "File count reported" "$output" "Found 2 files"
+assert_contains "Success reported" "$output" "Successfully processed 2 files"
+assert_contains "Prepare reported" "$output" "Preparing 2 operations"
+assert_contains "Commit reported" "$output" "Committing 2 operations"
+assert_contains "Copy reported" "$output" "copy: $SOURCE_DIR/file1.txt ->"
+assert_contains "NOP reported" "$output" "Nothing to commit"
+finish_test || exit 1
+
 test_group "Help command"
 output=$("$BINARY" --help 2>&1 || true)
 assert_contains "Help shows usage" "$output" "Usage:"

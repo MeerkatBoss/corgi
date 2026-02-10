@@ -62,7 +62,7 @@ assert_contains "File count reported" "$output" "Found 0 files"
 assert_contains "Warning reported" "$output" "Warning:"
 finish_test || exit 1
 
-test_group "Access to file denied"
+test_group "Access denied"
 rm -rf "$SOURCE_DIR" "$TARGET_DIR"
 mkdir -p "$SOURCE_DIR" "$TARGET_DIR"
 
