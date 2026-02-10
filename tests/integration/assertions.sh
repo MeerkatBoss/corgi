@@ -143,17 +143,17 @@ assert_contains_count() {
 }
 
 
-assert_filename_matches() {
+assert_matches() {
     local description="$1"
-    local filename="$2"
+    local string="$2"
     local pattern="$3"
 
-    if echo "$filename" | grep -qE "$pattern"; then
+    if echo "$string" | grep -qE "$pattern"; then
         _pass $description
         return 0
     else
         _fail $description
-        echo "      Filename: $filename"
+        echo "      Value: $string"
         echo "      Expected pattern: $pattern"
         return 1
     fi

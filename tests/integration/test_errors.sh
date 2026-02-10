@@ -36,9 +36,10 @@ rm -rf "$SOURCE_DIR" "$TARGET_DIR"
 mkdir -p "$SOURCE_DIR" "$TARGET_DIR"
 create_test_file "$SOURCE_DIR/test.txt"
 
-"$BINARY" --source "$SOURCE_DIR" \
-          --target "$TARGET_DIR" \
-          --tag "collision"
+assert_success "Works first time" \
+    "$BINARY" --source "$SOURCE_DIR" \
+              --target "$TARGET_DIR" \
+              --tag "collision"
 
 output=$("$BINARY" --source "$SOURCE_DIR" \
                    --target "$TARGET_DIR" \
