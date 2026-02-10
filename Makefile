@@ -92,12 +92,20 @@ $(warning "Unknown compiler, build potentially not supported")
 	CWARN := $(CWARN_COMMON)
 endif
 
+SANITIZERS := address,alignment,bool,bounds,enum,float-cast-overflow,${strip \
+	}float-divide-by-zero,integer-divide-by-zero,nonnull-attribute,null,${strip \
+  }return,returns-nonnull-attribute,shift,signed-integer-overflow,${strip \
+  }undefined,unreachable,vla-bound,vptr
+
+# Add leak sanitizer only on non-macOS platforms
+# (on macOS, leak detection is included in AddressSanitizer)
+UNAME_S := $(shell uname -s)
+ifneq ($(UNAME_S),Darwin)
+	SANITIZERS := $(SANITIZERS),leak
+endif
+
 CDEBUG := -D_DEBUG -ggdb -fstack-protector -fstrict-overflow \
-	-fno-omit-frame-pointer \
-	-fsanitize=address,alignment,bool,bounds,enum,float-cast-overflow,${strip \
-	}float-divide-by-zero,integer-divide-by-zero,leak,nonnull-attribute,${strip \
-	}null,return,returns-nonnull-attribute,shift,${strip \
-	}signed-integer-overflow,undefined,unreachable,vla-bound,vptr
+	-fno-omit-frame-pointer -fsanitize=$(SANITIZERS)
 
 CMACHINE :=
 
