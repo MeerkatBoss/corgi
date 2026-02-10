@@ -51,11 +51,11 @@ run_test_file() {
 
     if sh "$test_file"; then
         echo ""
-        printf "${GREEN}[OK] %s passed${NC}\n\n" "$test_name"
+        printf "${GREEN}[OK] '%s' passed${NC}\n\n" "$test_name"
         return 0
     else
         echo ""
-        printf "${RED}[FAIL] %s failed${NC}\n\n" "$test_name"
+        printf "${RED}[FAIL] '%s' failed${NC}\n\n" "$test_name"
         return 1
     fi
 }
