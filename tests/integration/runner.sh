@@ -43,16 +43,19 @@ setup_test_env() {
 
 run_test_file() {
     local test_file="$1"
+    local test_name=$(basename "$test_file")
+    test_name=${test_name%.*}
+    test_name=${test_name#test_}
     echo "============================"
-    printf "${YELLOW}Running %s...${NC}\n" "$(basename "$test_file")"
+    printf "${YELLOW}Running '%s' tests...${NC}\n" "$test_name"
 
     if sh "$test_file"; then
         echo ""
-        printf "${GREEN}[OK] %s passed${NC}\n\n" "$(basename "$test_file")"
+        printf "${GREEN}[OK] %s passed${NC}\n\n" "$test_name"
         return 0
     else
         echo ""
-        printf "${RED}[FAIL] %s failed${NC}\n\n" "$(basename "$test_file")"
+        printf "${RED}[FAIL] %s failed${NC}\n\n" "$test_name"
         return 1
     fi
 }
