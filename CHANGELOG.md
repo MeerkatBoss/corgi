@@ -22,6 +22,7 @@ and this project adheres to
 - Doxygen documentation configuration
 - clang-tidy static analysis configuration
 - Automatic compiler selection for building
+- Github CI to check successful builds
 
 #### Changed
 - Portable build process
