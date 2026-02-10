@@ -7,22 +7,29 @@ on:
     branches: [ master ]
 
 jobs:
-  build:
-    name: Build (${{ matrix.compiler }})
-    runs-on: ubuntu-latest
+  build-linux-macos:
+    name: Build (${{ matrix.os }}, ${{ matrix.compiler }})
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
+        os: [ubuntu-latest, macos-latest]
         compiler: [gcc, clang]
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Install dependencies
+    - name: Install dependencies (Linux)
+      if: runner.os == 'Linux'
       run: |
         sudo apt-get update
         sudo apt-get install -y gcc clang make
+
+    - name: Install dependencies (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        brew install gcc make
 
     - name: Build with ${{ matrix.compiler }}
       run: |
@@ -34,9 +41,33 @@ jobs:
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: corgi-${{ matrix.compiler }}
+        name: corgi-${{ matrix.os }}-${{ matrix.compiler }}
         path: build/bin/corgi
         retention-days: 7
+
+  build-freebsd:
+    name: Build (FreeBSD, ${{ matrix.compiler }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Build in FreeBSD VM
+      uses: vmactions/freebsd-vm@v1
+      with:
+        usesh: true
+        mem: 2048
+        copyback: false
+        prepare: |
+          pkg install -y ${{ matrix.compiler }} gmake
+        run: |
+          gmake clean
+          CC=${{ matrix.compiler }} TARGET=Release gmake all
 
   lint:
     name: Clang-Tidy
