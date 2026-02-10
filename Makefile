@@ -199,5 +199,27 @@ check:
 
 -include $(DEPS)
 
+# ==============================================================================
+# Testing Targets
+# ==============================================================================
+
+TEST_INTEGRATION_DIR := $(TESTDIR)/integration
+TEST_DIR ?= .tmp/tests
+
+test: test-integration
+
+test-setup:
+	@mkdir -p $(TEST_DIR)
+
+test-clean:
+	@echo $(call color,BLUE,\> Cleaning test artifacts)
+	@rm -rf $(TEST_DIR)
+
+test-integration: $(BINDIR)/$(PROJECT) test-setup
+	@echo $(call color,BROWN,Running integration tests...)
+	@TEST_DIR=$(TEST_DIR) \
+	 CORGI_BINARY=$(BINDIR)/$(PROJECT) \
+	 /bin/sh $(TEST_INTEGRATION_DIR)/runner.sh
+
 .PHONY: all remake clean cleaner run init debug doc view-doc check \
-        compiler-info
+        compiler-info test test-integration test-clean test-setup
