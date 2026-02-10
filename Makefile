@@ -1,6 +1,6 @@
-# ============================================================================
+# ==============================================================================
 # Project Configuration
-# ============================================================================
+# ==============================================================================
 
 PROJECT  := corgi
 VERSION  := 0.0.1
@@ -29,24 +29,45 @@ SOURCES := $(wildcard $(SRCDIR)/*.$(SRCEXT)) \
 HEADERS := $(wildcard $(SRCDIR)/*.$(HEADEXT)) \
            $(wildcard $(SRCDIR)/*/*.$(HEADEXT))
 
-LIBS    := $(patsubst lib%.a, %, $(shell find $(LIBDIR) -type f 2>/dev/null))
-OBJECTS := $(patsubst $(SRCDIR)/%,$(OBJDIR)/%,$(SOURCES:.$(SRCEXT)=.$(OBJEXT)))
+OBJECTS := $(patsubst $(SRCDIR)/%,$(OBJDIR)/%, $(SOURCES:.$(SRCEXT)=.$(OBJEXT)))
 DEPS    := $(patsubst $(SRCDIR)/%,$(MAKEDIR)/%,$(SOURCES:.$(SRCEXT)=.$(DEPEXT)))
 
-# ============================================================================
-# Compiler configuration
-# ============================================================================
+# ==============================================================================
+# Terminal Colors
+# ==============================================================================
 
-CC ?= $(shell which clang 2>/dev/null || which gcc 2>/dev/null || which cc 2>/dev/null || echo "cc")
+ifneq (,$(filter xterm-%color,$(TERM)))
+	color = $(value $1)$2"\033[0m"
+else
+	color = $2
+endif
+
+GREEN := "\033[32m"
+BROWN := "\033[33m"
+RED   := "\033[91m"
+BLUE  := "\033[34m"
+
+
+# ==============================================================================
+# Compiler configuration
+# ==============================================================================
+
+CC ?= $(shell which clang 2>/dev/null || \
+               which gcc 2>/dev/null || \
+               which cc 2>/dev/null || \
+               echo "cc")
 CC := $(shell which $(CC))
 
 # Detect compiler type by checking version string
 CC_VERSION := $(shell $(CC) --version 2>/dev/null)
+
 IS_CLANG := $(if $(findstring clang,$(CC_VERSION)),1,0)
-IS_GCC := $(if $(findstring gcc,$(CC_VERSION))$(findstring GCC,$(CC_VERSION))$(findstring Free Software Foundation,$(CC_VERSION)),1,0)
+IS_GCC   := $(if $(findstring gcc,$(CC_VERSION))\
+                 $(findstring GCC,$(CC_VERSION))\
+                 $(findstring Free Software Foundation,$(CC_VERSION)),1,0)
 
 export CC
-$(info Selected compiler $(CC))
+$(info $(shell echo $(call color,BROWN,Selected compiler) $(CC)))
 
 # Common warnings
 CWARN_COMMON := -Wall -Wextra -Wcast-align -Wcast-qual -Wchar-subscripts \
@@ -91,33 +112,19 @@ else
 	CFLAGS := -O0 $(CDEBUG) $(CFLAGS)
 endif
 
-# ============================================================================
-# Terminal Colors
-# ============================================================================
-
-ifneq (,$(filter xterm-%color,$(TERM)))
-	color = $(value $1)$2"\033[0m"
-else
-	color = $2
-endif
-
-GREEN := "\033[32m"
-BROWN := "\033[33m"
-RED   := "\033[91m"
-BLUE  := "\033[34m"
-
 define require-tool
 $(if $(shell which $(1) 2>/dev/null),,\
-  $(error $(2) requires $(1) but it was not found. Please install $(1) and try again))
+  $(error $(2) requires $(1) but it was not found. \
+          Please install $(1) and try again))
 endef
 
 GDB        ?= gdb
 DOXYGEN    ?= doxygen
 CLANG_TIDY ?= clang-tidy
 
-# ============================================================================
+# ==============================================================================
 # Meta targets
-# ============================================================================
+# ==============================================================================
 
 all: $(BINDIR)/$(PROJECT)
 
@@ -137,20 +144,22 @@ init:
 
 compiler-info:
 	@echo "Detected compiler: $(CC)"
-	@echo "Compiler type: $(if $(filter 1,$(IS_CLANG)),Clang,$(if $(filter 1,$(IS_GCC)),GCC,Unknown))"
+	@echo "Compiler type: $(if $(filter 1,$(IS_CLANG)),Clang,\
+	                          $(if $(filter 1,$(IS_GCC)),GCC,Unknown))"
 	@echo "Version info:"
 	@$(CC) --version
 
-# ============================================================================
+# ==============================================================================
 # Build Rules
-# ============================================================================
+# ==============================================================================
 
 # Build source objects
 $(OBJDIR)/%.$(OBJEXT): $(SRCDIR)/%.$(SRCEXT)
 	@mkdir -p $(dir $@) $(dir $(MAKEDIR)/$*.$(DEPEXT))
 	@echo CC $@
-	@$(CC) $(CFLAGS) $(INCFLAGS) -MMD -MP -MF $(MAKEDIR)/$*.$(DEPEXT) -c $< -o $@ \
-		|| (echo $(call color,RED,\>! Failed to build $@ from $< !\<); exit 1)
+	@$(CC) $(CFLAGS) $(INCFLAGS) \
+    -MMD -MP -MF $(MAKEDIR)/$*.$(DEPEXT) -c $< -o $@ \
+	  || (echo $(call color,RED,\>! Failed to build $@ from $< !\<); exit 1)
 
 # Build project binary
 $(BINDIR)/$(PROJECT): $(OBJECTS)
@@ -161,9 +170,9 @@ $(BINDIR)/$(PROJECT): $(OBJECTS)
 		    exit 1)
 	@echo $(call color,GREEN,=== Build done! ===)
 
-# ============================================================================
+# ==============================================================================
 # Utility Targets
-# ============================================================================
+# ==============================================================================
 
 # Remove objects
 clean:
@@ -190,4 +199,5 @@ check:
 
 -include $(DEPS)
 
-.PHONY: all remake clean cleaner run init debug doc view-doc check compiler-info
+.PHONY: all remake clean cleaner run init debug doc view-doc check \
+        compiler-info
