@@ -118,9 +118,17 @@ int parse_args(int argc, char** argv, CliArgs* parsed) {
       }
       break;
     case 's':
+      if (parsed->source_dir) {
+        fprintf(stderr, "Source directory can only be specified once\n");
+        return -1;
+      }
       parsed->source_dir = optarg;
       break;
     case 'd':
+      if (parsed->target_dir) {
+        fprintf(stderr, "Target directory can only be specified once\n");
+        return -1;
+      }
       parsed->target_dir = optarg;
       break;
     case 'v':
