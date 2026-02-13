@@ -71,6 +71,7 @@ finish_test || exit 1
 
 test_group "Dry-run mode without target"
 setup_file
+rm -r "$TARGET_DIR"
 
 assert_success "Accepts --dry-run" \
     "$BINARY" --source "$SOURCE_DIR" \
