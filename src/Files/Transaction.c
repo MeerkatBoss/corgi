@@ -151,6 +151,7 @@ static file_error_t copy_file(
       goto quit;
     }
   }
+  /* TODO: report overwrite in verbose mode */
 
   /* Open destination file */
   dest = fopen(dest_path, "wb");

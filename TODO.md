@@ -7,3 +7,6 @@
 - Optionally (if found) use Freedesktop `trash-put` utility for deleting files
 - Allow overriding of timestamp, set timestamp on moving/copying file
 - Allow selecting between move and copy
+# Tests
+- Test for compliant CLI (long/short options, combining short options, long
+  options with '='/space, space/no space after short tag, '--' option)
