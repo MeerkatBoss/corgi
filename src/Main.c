@@ -47,7 +47,7 @@ static file_error_t execute_operations(
   FileTransaction transaction;
   int transaction_initialized = 0;
 
-  result = file_transaction_init(&transaction, target_dir);
+  result = file_transaction_init(&transaction, target_dir, options);
   if (result != FERR_NONE) {
     fprintf(stderr, "Error: Failed to initialize transaction for target '%s': %s\n",
             target_dir, directory_error_to_string(result));

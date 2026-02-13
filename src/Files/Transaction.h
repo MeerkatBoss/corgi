@@ -66,7 +66,8 @@ typedef struct {
  */
 file_error_t file_transaction_init(
   FileTransaction* transaction,
-  const char* target_dir
+  const char* target_dir,
+  const TransactionOptions* options
 );
 
 /**
