@@ -1,5 +1,4 @@
 # General
-- Get rid of dependency on glibc-specific `getopt_long()`, implement argument parsing properly
 - Keep file tags sorted and unique, without sorting them on each name generation
 - Implement standard Make targets (check, dist, distcheck, install, uninstall)
   and support standard variables (DESTDIR, PREFIX)
