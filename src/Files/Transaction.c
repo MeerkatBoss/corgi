@@ -76,7 +76,8 @@ quit:
 
 file_error_t file_transaction_init(
   FileTransaction* transaction,
-  const char* target_dir
+  const char* target_dir,
+  const TransactionOptions* options
 ) {
   PANIC_IF_NULL(transaction);
   PANIC_IF_NULL(target_dir);
@@ -85,6 +86,18 @@ file_error_t file_transaction_init(
   transaction->operation_count = 0;
   transaction->target_directory = copy_string(target_dir);
 
+  if (options->dry_run) {
+    return FERR_NONE;
+  }
+
+  if (options->verbose) {
+    if (access(target_dir, F_OK) != 0) {
+      printf(
+        "Target directory '%s' does not exist, creating it...\n",
+        target_dir
+      );
+    }
+  }
   file_error_t result = create_directory(target_dir);
   if (result != FERR_NONE) {
     free(transaction->target_directory);

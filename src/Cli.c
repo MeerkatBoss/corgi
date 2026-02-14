@@ -118,9 +118,25 @@ int parse_args(int argc, char** argv, CliArgs* parsed) {
       }
       break;
     case 's':
+      if (parsed->source_dir) {
+        fprintf(stderr, "Source directory can only be specified once\n");
+        return -1;
+      }
+      if (strlen(optarg) == 0) {
+        fprintf(stderr, "Source directory name cannot be empty\n");
+        return -1;
+      }
       parsed->source_dir = optarg;
       break;
     case 'd':
+      if (parsed->target_dir) {
+        fprintf(stderr, "Target directory can only be specified once\n");
+        return -1;
+      }
+      if (strlen(optarg) == 0) {
+        fprintf(stderr, "Target directory name cannot be empty\n");
+        return -1;
+      }
       parsed->target_dir = optarg;
       break;
     case 'v':
@@ -163,6 +179,24 @@ int parse_args(int argc, char** argv, CliArgs* parsed) {
     fprintf(stderr, "Unexpected argument '%s'\n", argv[optind]);
     return -1;
   }
+
+  /* Remove trailing slashes from source */
+  size_t source_len = strlen(parsed->source_dir);
+  char* source_end = parsed->source_dir + source_len - 1;
+  while (*source_end == '/' && source_end > parsed->source_dir) {
+    --source_end;
+  }
+  ++source_end;
+  *source_end = '\0';
+  
+  /* Remove trailing slashes from target */
+  size_t target_len = strlen(parsed->target_dir);
+  char* target_end = parsed->target_dir + target_len - 1;
+  while (*target_end == '/' && target_end > parsed->target_dir) {
+    --target_end;
+  }
+  ++target_end;
+  *target_end = '\0';
 
   return 0;
 }
