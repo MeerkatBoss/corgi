@@ -6,3 +6,5 @@
 - Optionally (if found) use Freedesktop `trash-put` utility for deleting files
 - Allow overriding of timestamp, set timestamp on moving/copying file
 - Allow selecting between move and copy
+# CI
+- Check for building with musl instead of glibc
