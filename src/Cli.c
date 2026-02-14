@@ -1,5 +1,7 @@
 #include "Cli.h"
 
+#include <assert.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -19,13 +21,13 @@ typedef struct {
 } CliParseState;
 
 static const CliOptionDef CliOptions[] = {
-  {"tag",     't', "TAG",   "Add tag to indexed files (can be used multiple times)"},
-  {"source",  's', "DIR",   "Source directory (required)"},
-  {"target",  'd', "DIR",   "Target directory (required)"},
-  {"verbose", 'v',  NULL,   "Print source and generated target file names"},
-  {"force",   'f',  NULL,   "Allow overwriting existing files in target directory"},
-  {"dry-run",   0,  NULL,   "Do not copy files"},
-  {"help",    'h',  NULL,   "Print this help message"},
+  {"tag",     't', "TAG", "Add tag to indexed files (can be used multiple times)"},
+  {"source",  's', "DIR", "Source directory (required)"},
+  {"target",  'd', "DIR", "Target directory (required)"},
+  {"verbose", 'v',  NULL, "Print source and generated target file names"},
+  {"force",   'f',  NULL, "Allow overwriting existing files in target directory"},
+  {"dry-run",   0,  NULL, "Do not copy files"},
+  {"help",    'h',  NULL, "Print this help message"},
 };
 
 enum {
@@ -70,7 +72,7 @@ static int find_short_option(char ch) {
   return -1;
 }
 
-static int has_next_arg(CliParseState* state) {
+static int has_next_arg(const CliParseState* state) {
   return state->arg_index + 1 < state->argc;
 }
 
@@ -82,18 +84,31 @@ static char* next_arg(CliParseState* state) {
   return NULL;
 }
 
-static char* current_arg(CliParseState* state) {
+static char* current_arg(const CliParseState* state) {
   if (state->arg_index < state->argc) {
     return state->argv[state->arg_index];
   }
   return NULL;
 }
 
-static int handle_option(int option_idx, char* value, CliArgs* parsed) {
+static int is_terminator(const char* arg) {
+  return strcmp(arg, "--") == 0;
+}
+
+static int is_long_option(const char* arg) {
+  return strncmp(arg, "--", 2) == 0 && strlen(arg) > 2;
+}
+
+static int is_short_option(const char* arg) {
+  return strlen(arg) > 1 && arg[0] == '-' && arg[1] != '-';
+}
+
+static int apply_option(int option_idx, char* value, CliArgs* parsed) {
   const CliOptionDef* opt = &CliOptions[option_idx];
 
   if (!opt->arg_name) {
     /* No argument required */
+    assert(value == NULL);
     switch (opt->short_name) {
     case 'v':
       parsed->verbose = 1;
@@ -115,6 +130,7 @@ static int handle_option(int option_idx, char* value, CliArgs* parsed) {
   }
 
   /* Argument is passed via value */
+  assert(value != NULL);
   switch (opt->short_name) {
   case 't':
     if (parsed->tag_count < CLI_MAX_TAGS) {
@@ -178,15 +194,17 @@ static int parse_long_option(CliParseState* state) {
     } else if (has_next_arg(state)) {
       value = next_arg(state);
     } else {
-      fprintf(stderr, "Missing required argument '%s' for option '--%s'.\n",
+      fprintf(stderr,
+              "Missing required argument '%s' for option '--%s'.\n",
               CliOptions[opt_idx].arg_name,
               CliOptions[opt_idx].long_name);
       return -1;
     }
   }
 
-  if (handle_option(opt_idx, value, state->result) != 0) {
-    return -1;
+  int res = apply_option(opt_idx, value, state->result);
+  if (res != 0) {
+    return res;
   }
 
   return 0;
@@ -203,9 +221,9 @@ static int parse_short_options(CliParseState* state) {
       return -1;
     }
 
+    char* value = NULL;
     if (CliOptions[opt_idx].arg_name) {
       /* This option requires a value */
-      char* value = NULL;
       if (*(ch + 1) != '\0') {
         value = ch + 1;
       } else if (has_next_arg(state)) {
@@ -215,17 +233,18 @@ static int parse_short_options(CliParseState* state) {
                 CliOptions[opt_idx].arg_name, *ch);
         return -1;
       }
+    }
 
-      if (handle_option(opt_idx, value, state->result) != 0) {
-        return -1;
-      }
+    int res = apply_option(opt_idx, value, state->result);
+    if (res != 0) {
+      return res;
+    }
+
+    if (value) {
+      /* Option handling ends after reading argument */
       break;
     }
 
-    /* Boolean flag */
-    if (handle_option(opt_idx, NULL, state->result) != 0) {
-      return -1;
-    }
     ++ch;
   }
 
@@ -268,20 +287,22 @@ int parse_args(int argc, char** argv, CliArgs* parsed) {
   while (has_next_arg(&state)) {
     const char* arg = next_arg(&state);
 
-    if (strcmp(arg, "--") == 0) {
+    if (is_terminator(arg)) {
       break;
     }
 
-    if (strncmp("--", arg, 2) == 0) {
-      if (parse_long_option(&state) != 0) {
-        return -1;
+    if (is_long_option(arg)) {
+      int res = parse_long_option(&state);
+      if (res != 0) {
+        return res;
       }
       continue;
     }
 
-    if (arg[0] == '-' && arg[1] != '\0') {
-      if (parse_short_options(&state) != 0) {
-        return -1;
+    if (is_short_option(arg)) {
+      int res = parse_short_options(&state);
+      if (res != 0) {
+        return res;
       }
       continue;
     }
