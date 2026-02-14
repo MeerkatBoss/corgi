@@ -91,7 +91,7 @@ file_error_t file_transaction_init(
   }
 
   if (options->verbose) {
-    if (access(target_dir, F_OK) == 0) {
+    if (access(target_dir, F_OK) != 0) {
       printf(
         "Target directory '%s' does not exist, creating it...\n",
         target_dir
