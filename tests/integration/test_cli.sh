@@ -22,8 +22,7 @@ test_group "Basic usage"
     setup
 
     assert_success "Just works" \
-        "$BINARY" --source "$SOURCE_DIR" \
-                  --target "$TARGET_DIR"
+        "$BINARY" --source "$SOURCE_DIR" --target "$TARGET_DIR"
 finish_test || exit 1
 
 test_group "Create missing directory"
@@ -31,8 +30,7 @@ test_group "Create missing directory"
     rm -r "$TARGET_DIR"
 
     assert_success "Still works" \
-        "$BINARY" --source "$SOURCE_DIR" \
-                  --target "$TARGET_DIR"
+        "$BINARY" --source "$SOURCE_DIR" --target "$TARGET_DIR"
     assert_directory_exists "Target directory created" "$TARGET_DIR"
 finish_test || exit 1
 
@@ -40,8 +38,7 @@ test_group "Valid tags"
     setup_file
 
     assert_success "Accepts valid tags" \
-        "$BINARY" --source "$SOURCE_DIR" \
-                  --target "$TARGET_DIR" \
+        "$BINARY" --source "$SOURCE_DIR" --target "$TARGET_DIR" \
                   --tag "vacation" --tag "summer-trip" --dry-run
 finish_test || exit 1
 
@@ -49,9 +46,7 @@ test_group "Dry-run mode"
     setup_file
 
     assert_success "Accepts --dry-run" \
-        "$BINARY" --source "$SOURCE_DIR" \
-                  --target "$TARGET_DIR" \
-                  --tag "dryrun" --dry-run
+        "$BINARY" --source "$SOURCE_DIR" --target "$TARGET_DIR" --dry-run
 
     assert_file_count "No files created" "$TARGET_DIR" 0
     assert_file_count "Source file still exists" "$SOURCE_DIR" 1
@@ -62,9 +57,7 @@ test_group "Dry-run mode without target"
     rm -r "$TARGET_DIR"
 
     assert_success "Accepts --dry-run" \
-        "$BINARY" --source "$SOURCE_DIR" \
-                  --target "$TARGET_DIR" \
-                  --tag "dryrun" --dry-run
+        "$BINARY" --source "$SOURCE_DIR" --target "$TARGET_DIR" --dry-run
 
     assert_directory_not_exists "Target directory not created" "$TARGET_DIR"
 finish_test || exit 1
@@ -76,8 +69,8 @@ test_group "Verbose mode"
     create_test_file "$SOURCE_DIR/file2.txt"
 
     output=$("$BINARY" --source "$SOURCE_DIR" \
-                      --target "$TARGET_DIR" \
-                      --tag "verbose" --verbose 2>&1)
+                       --target "$TARGET_DIR" \
+                       --verbose 2>&1)
 
     assert_contains "File count reported" "$output" "Found 2 files"
     assert_contains "Target creation reported" \
@@ -91,16 +84,21 @@ test_group "Verbose mode"
 finish_test || exit 1
 
 test_group "Help command"
-    output=$("$BINARY" --help 2>&1 || true)
-    assert_contains "Help shows usage" "$output" "Usage:"
-    assert_contains "Help shows --source" "$output" "--source"
-    assert_contains "Help shows show --target" "$output" "--target"
+    output1=$("$BINARY" --help 2>&1 || true)
+    assert_contains "--help shows usage" "$output1" "Usage:"
+    assert_contains "--help shows --source" "$output1" "--source"
+    assert_contains "--help shows --target" "$output1" "--target"
+
+    output2=$("$BINARY" -h 2>&1 || true)
+    assert_success "Same output" test "'$output1'" = "'$output2'"
 finish_test || exit 1
 
-# == Edge cases ==
+
+# == Advanced argument parsing ==
 
 test_group "Long options with = separator"
     setup_file
+    rm -r "$TARGET_DIR"
 
     assert_success "Accepts --source=DIR --target=DIR" \
         "$BINARY" --source="$SOURCE_DIR" --target="$TARGET_DIR" --dry-run
@@ -120,8 +118,8 @@ test_group "Long options with space separator"
 
     output=$("$BINARY" --source "$SOURCE_DIR" --target "$TARGET_DIR" \
                        --tag hello --verbose --dry-run 2>&1)
-    assert_contains "Source path parsed" \
-        "$output" "Found 1 files in '$SOURCE_DIR'"
+    assert_contains "Source path parsed" "$output" "$SOURCE_DIR"
+    assert_contains "Target path parsed" "$output" "$TARGET_DIR"
     assert_contains "Tag parsed" "$output" "hello"
 finish_test || exit 1
 
@@ -138,6 +136,13 @@ test_group "Long options with mixed separators"
                        --tag=hello --tag world --verbose --dry-run 2>&1)
     assert_contains "Tag with = parsed" "$output" "hello"
     assert_contains "Tag with space parsed" "$output" "world"
+finish_test || exit 1
+
+test_group "Trailing slash in directory path"
+    setup_file
+    output=$("$BINARY" --source "$SOURCE_DIR/" --target "$TARGET_DIR/" \
+                       --verbose --dry-run 2>&1)
+    assert_contains_count "No double slashes in output" "$output" "//" 0
 finish_test || exit 1
 
 test_group "Short options with space separator"
@@ -288,18 +293,6 @@ test_group "Option terminator --"
     assert_contains "Reports the argument" "$output" "extra"
 finish_test || exit 1
 
-test_group "Help options"
-    output1=$("$BINARY" --help 2>&1 || true)
-    assert_contains "--help shows usage" "$output1" "Usage:"
-    assert_contains "--help shows --source" "$output1" "--source"
-    assert_contains "--help shows --target" "$output1" "--target"
-
-    output2=$("$BINARY" -h 2>&1 || true)
-    assert_contains "-h shows usage" "$output2" "Usage:"
-
-    assert_success "Same output" test "'$output1'" = "'$output2'"
-finish_test || exit 1
-
 test_group "Long option abbreviation"
     setup
 
@@ -324,19 +317,6 @@ test_group "Long option abbreviation"
     assert_failure "Reject ambiguous --ta" \
         "$BINARY" --source "$SOURCE_DIR" --ta "$TARGET_DIR" --dry-run
 finish_test || exit 1
-
-test_group "Repeated options"
-    setup
-
-    SECOND_SOURCE="$TEST_DIR/source2"
-    rm -rf "$SECOND_SOURCE"
-    mkdir -p "$SECOND_SOURCE"
-
-    assert_failure "Repeated options not allowed" \
-        "$BINARY" -s "$SOURCE_DIR" -s "$SECOND_SOURCE" \
-                  -d "$TARGET_DIR" -v --dry-run 2>&1
-finish_test || exit 1
-
 
 # == Errors in usage ==
 
@@ -424,5 +404,19 @@ test_group "Too many tags"
     assert_contains "16 tags: CLI accepts, file limit reached" \
         "$output" "Failed to add tags"
 finish_test || exit 1
+
+test_group "Repeated options"
+    setup
+
+    SECOND_SOURCE="$TEST_DIR/source2"
+    rm -rf "$SECOND_SOURCE"
+    mkdir -p "$SECOND_SOURCE"
+
+    assert_failure "Repeated options not allowed" \
+        "$BINARY" -s "$SOURCE_DIR" -s "$SECOND_SOURCE" \
+                  -d "$TARGET_DIR" -v --dry-run 2>&1
+    rm -r "$SECOND_SOURCE"
+finish_test || exit 1
+
 
 exit 0

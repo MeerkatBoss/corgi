@@ -37,8 +37,7 @@ test_group "File collision"
     create_test_file "$SOURCE_DIR/test.txt"
 
     assert_success "Works first time" \
-        "$BINARY" --source "$SOURCE_DIR" \
-                  --target "$TARGET_DIR"
+        "$BINARY" --source "$SOURCE_DIR" --target "$TARGET_DIR"
 
     output=$("$BINARY" --source "$SOURCE_DIR" \
                        --target "$TARGET_DIR" 2>&1 || true)

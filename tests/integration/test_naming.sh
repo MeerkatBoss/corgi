@@ -78,9 +78,7 @@ test_group "Preserve extension"
     create_test_file "$SOURCE_DIR/README"
 
     assert_success "Just works" \
-        "$BINARY" --source "$SOURCE_DIR" \
-                  --target "$TARGET_DIR" \
-                  --tag "mixed"
+        "$BINARY" --source "$SOURCE_DIR" --target "$TARGET_DIR" --tag "mixed"
 
     assert_file_count "All files copied" "$TARGET_DIR" 4
     assert_file_exists "TXT file copied" \

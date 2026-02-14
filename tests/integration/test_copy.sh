@@ -45,8 +45,7 @@ test_group "Preserve content"
     }
 
     for source_file in "$SOURCE_DIR"/*.txt; do
-        assert_success \
-            "Content preserved for $(basename "$source_file")" \
+        assert_success "Content preserved for $(basename "$source_file")" \
             content_exists_in_target "$source_file"
     done
 finish_test || exit 1
