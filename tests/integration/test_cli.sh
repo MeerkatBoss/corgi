@@ -343,25 +343,31 @@ finish_test || exit 1
 
 test_group "Missing option arguments"
     output=$("$BINARY" -s "$SOURCE_DIR" -d 2>&1 || true)
-    assert_contains "Missing arg for -d" "$output" "Missing argument"
+    assert_contains "Missing arg for -d" "$output" "Missing required argument"
+    assert_contains "Reports -d option name" "$output" "-d"
 
     output=$("$BINARY" -s "$SOURCE_DIR" -d "$TARGET_DIR" -t 2>&1 || true)
-    assert_contains "Missing arg for -t" "$output" "Missing argument"
+    assert_contains "Missing arg for -t" "$output" "Missing required argument"
+    assert_contains "Reports -t option name" "$output" "-t"
 
     output=$("$BINARY" -s 2>&1 || true)
-    assert_contains "Missing arg for -s" "$output" "Missing argument"
+    assert_contains "Missing arg for -s" "$output" "Missing required argument"
+    assert_contains "Reports -s option name" "$output" "-s"
 
     output=$("$BINARY" --source 2>&1 || true)
-    assert_contains "Missing arg for --source" "$output" "Missing argument"
-    assert_contains "Reports option name" "$output" "--source"
+    assert_contains "Missing arg for --source" \
+        "$output" "Missing required argument"
+    assert_contains "Reports --source option name" "$output" "--source"
 
     output=$("$BINARY" -s "$SOURCE_DIR" --target 2>&1 || true)
-    assert_contains "Missing arg for --target" "$output" "Missing argument"
-    assert_contains "Reports option name" "$output" "--target"
+    assert_contains "Missing arg for --target" \
+        "$output" "Missing required argument"
+    assert_contains "Reports --target option name" "$output" "--target"
 
     output=$("$BINARY" -s "$SOURCE_DIR" -d "$TARGET_DIR" --tag 2>&1 || true)
-    assert_contains "Missing arg for --tag" "$output" "Missing argument"
-    assert_contains "Reports option name" "$output" "--tag"
+    assert_contains "Missing arg for --tag" \
+        "$output" "Missing required argument"
+    assert_contains "Reports --tag option name" "$output" "--tag"
 finish_test || exit 1
 
 test_group "Unknown options"

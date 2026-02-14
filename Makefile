@@ -75,7 +75,7 @@ CWARN_COMMON := -Wall -Wextra -Wcast-align -Wcast-qual -Wchar-subscripts \
 	-Wformat=2 -Winline -Wpacked -Wpointer-arith -Wredundant-decls \
 	-Wstrict-overflow=2 -Wswitch-default -Wswitch-enum -Wundef \
 	-Wunreachable-code -Wunused -Wvariadic-macros \
-	-Wno-missing-field-initializers -Wno-narrowing
+	-Wno-missing-field-initializers -Wno-narrowing -Wpedantic
 
 # Clang-specific warnings
 CWARN_CLANG := -Wno-unused-command-line-argument
@@ -109,7 +109,7 @@ CDEBUG := -D_DEBUG -ggdb -fstack-protector -fstrict-overflow \
 
 CMACHINE :=
 
-CFLAGS   := -std=gnu99 -fPIE $(CMACHINE) $(CWARN)
+CFLAGS   := -std=c99 -fPIE $(CMACHINE) $(CWARN)
 INCFLAGS := -I$(SRCDIR) -I$(INCDIR)
 LDFLAGS  :=
 
@@ -203,7 +203,8 @@ debug: $(BINDIR)/$(PROJECT)
 
 check:
 	@$(call require-tool,$(CLANG_TIDY),Code checking)
-	@$(CLANG_TIDY) -p $(BUILDDIR) $(SOURCES) -- $(CFLAGS) $(INCFLAGS)
+	@$(CLANG_TIDY) -p $(BUILDDIR) $(SOURCES) -header-filter=.* -- \
+	 $(CFLAGS) $(INCFLAGS)
 
 -include $(DEPS)
 

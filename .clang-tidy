@@ -1,6 +1,6 @@
 ---
 
-Checks: '-*,clang-diagnostic-*,clang-analyzer-*,bugprone-*,-bugprone-macro-parentheses,readability-identifier-naming'
+Checks: '-*,clang-diagnostic-*,clang-analyzer-*,bugprone-*,-bugprone-macro-parentheses,-bugprone-reserved-identifier,readability-identifier-naming'
 
 WarningsAsErrors: '*'
 

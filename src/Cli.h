@@ -20,6 +20,7 @@ enum {
  * @brief Command-line arguments structure
  */
 typedef struct {
+  char* program_name;             /*!< Name of the program (argv[0]) */
   char* source_dir;               /*!< Path to source directory */
   char* target_dir;               /*!< Path to target directory */
   const char* tags[CLI_MAX_TAGS]; /*!< Array of tag strings */

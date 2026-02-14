@@ -96,7 +96,7 @@ int main(int argc, char** argv) {
   CliArgs args = {0};
   int parse_result = parse_args(argc, argv, &args);
   if (parse_result != 0) {
-    print_help(argv[0]);
+    print_help(args.program_name);
     return 1;
   }
 

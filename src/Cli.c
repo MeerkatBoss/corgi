@@ -1,10 +1,10 @@
 #include "Cli.h"
 
+#include <assert.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <getopt.h>
 
 typedef struct {
   const char* long_name;
@@ -13,62 +13,242 @@ typedef struct {
   const char* help;
 } CliOptionDef;
 
+typedef struct {
+  int argc;
+  char** argv;
+  int arg_index;
+  CliArgs* result;
+} CliParseState;
+
 static const CliOptionDef CliOptions[] = {
-  {"tag",     't', "TAG",   "Add tag to indexed files (can be used multiple times)"},
-  {"source",  's', "DIR",   "Source directory (required)"},
-  {"target",  'd', "DIR",   "Target directory (required)"},
-  {"verbose", 'v',  NULL,   "Print source and generated target file names"},
-  {"force",   'f',  NULL,   "Allow overwriting existing files in target directory"},
-  {"dry-run",   0,  NULL,   "Do not copy files"},
-  {"help",    'h',  NULL,   "Print this help message"},
+  {"tag",     't', "TAG", "Add tag to indexed files (can be used multiple times)"},
+  {"source",  's', "DIR", "Source directory (required)"},
+  {"target",  'd', "DIR", "Target directory (required)"},
+  {"verbose", 'v',  NULL, "Print source and generated target file names"},
+  {"force",   'f',  NULL, "Allow overwriting existing files in target directory"},
+  {"dry-run",   0,  NULL, "Do not copy files"},
+  {"help",    'h',  NULL, "Print this help message"},
 };
 
 enum {
   CLI_OPTION_COUNT = sizeof(CliOptions)/sizeof(*CliOptions)
 };
 
-static void get_long_options(struct option long_options[]) {
-  for (size_t i = 0; i < CLI_OPTION_COUNT; ++i) {
-    long_options[i].name = CliOptions[i].long_name;
-    long_options[i].has_arg = CliOptions[i].arg_name ? required_argument : no_argument;
-    long_options[i].flag = NULL;
-    long_options[i].val = CliOptions[i].short_name;
-  }
-  long_options[CLI_OPTION_COUNT].name = 0;
-  long_options[CLI_OPTION_COUNT].has_arg = 0;
-  long_options[CLI_OPTION_COUNT].flag = 0;
-  long_options[CLI_OPTION_COUNT].val = 0;
-}
-
-static size_t get_optstring(char* optstring, size_t maxlen) {
-  if (maxlen == 0) {
-    return 0;
-  }
-  maxlen--;
-
-  size_t idx = 0;
-  if (idx < maxlen) {
-    optstring[idx] = ':';
-    ++idx;
-  }
+/**
+ * Find a long option by prefix match.
+ * Returns index into CliOptions on unique match,
+ *  -1 if not found, -2 if ambiguous.
+ */
+static int find_long_option(const char* name, size_t name_len) {
+  int match_index = -1;
+  int match_count = 0;
 
   for (size_t i = 0; i < CLI_OPTION_COUNT; ++i) {
-    if (CliOptions[i].short_name) {
-      if (idx < maxlen) {
-        optstring[idx] = (char) CliOptions[i].short_name;
-        ++idx;
+    if (strncmp(CliOptions[i].long_name, name, name_len) == 0) {
+      if (strlen(CliOptions[i].long_name) == name_len) {
+        /* Exact match */
+        return (int) i;
       }
-      if (CliOptions[i].arg_name) {
-        if (idx < maxlen) {
-          optstring[idx] = ':';
-          ++idx;
-        }
-      }
+      match_index = (int) i;
+      ++match_count;
     }
   }
 
-  optstring[idx] = '\0';
-  return idx;
+  if (match_count == 1) {
+    return match_index;
+  }
+  if (match_count > 1) {
+    return -2;
+  }
+  return -1;
+}
+
+static int find_short_option(char ch) {
+  for (size_t i = 0; i < CLI_OPTION_COUNT; ++i) {
+    if (CliOptions[i].short_name == ch) {
+      return (int) i;
+    }
+  }
+  return -1;
+}
+
+static int has_next_arg(const CliParseState* state) {
+  return state->arg_index + 1 < state->argc;
+}
+
+static char* next_arg(CliParseState* state) {
+  if (has_next_arg(state)) {
+    ++state->arg_index;
+    return state->argv[state->arg_index];
+  }
+  return NULL;
+}
+
+static char* current_arg(const CliParseState* state) {
+  if (state->arg_index < state->argc) {
+    return state->argv[state->arg_index];
+  }
+  return NULL;
+}
+
+static int is_terminator(const char* arg) {
+  return strcmp(arg, "--") == 0;
+}
+
+static int is_long_option(const char* arg) {
+  return strncmp(arg, "--", 2) == 0 && strlen(arg) > 2;
+}
+
+static int is_short_option(const char* arg) {
+  return strlen(arg) > 1 && arg[0] == '-' && arg[1] != '-';
+}
+
+static int apply_option(int option_idx, char* value, CliArgs* parsed) {
+  const CliOptionDef* opt = &CliOptions[option_idx];
+
+  if (!opt->arg_name) {
+    /* No argument required */
+    assert(value == NULL);
+    switch (opt->short_name) {
+    case 'v':
+      parsed->verbose = 1;
+      break;
+    case 'f':
+      parsed->force = 1;
+      break;
+    case 'h':
+      print_help(parsed->program_name);
+      exit(0);
+    case 0:
+      parsed->dry_run = 1;
+      break;
+    default:
+      fprintf(stderr, "Unknown option '-%c'\n", opt->short_name);
+      return -1;
+    }
+    return 0;
+  }
+
+  /* Argument is passed via value */
+  assert(value != NULL);
+  switch (opt->short_name) {
+  case 't':
+    if (parsed->tag_count < CLI_MAX_TAGS) {
+      parsed->tags[parsed->tag_count] = value;
+      ++parsed->tag_count;
+    } else {
+      fprintf(stderr, "Too many tags (max %d)\n", CLI_MAX_TAGS);
+      return -1;
+    }
+    break;
+  case 's':
+    if (parsed->source_dir) {
+      fprintf(stderr, "Source directory can only be specified once\n");
+      return -1;
+    }
+    if (strlen(value) == 0) {
+      fprintf(stderr, "Source directory name cannot be empty\n");
+      return -1;
+    }
+    parsed->source_dir = value;
+    break;
+  case 'd':
+    if (parsed->target_dir) {
+      fprintf(stderr, "Target directory can only be specified once\n");
+      return -1;
+    }
+    if (strlen(value) == 0) {
+      fprintf(stderr, "Target directory name cannot be empty\n");
+      return -1;
+    }
+    parsed->target_dir = value;
+    break;
+  default:
+    fprintf(stderr, "Unknown option '-%c'\n", opt->short_name);
+    return -1;
+  }
+
+  return 0;
+}
+
+static int parse_long_option(CliParseState* state) {
+  char* arg = current_arg(state);
+  char* name_start = arg + 2;
+  char* eq = strchr(name_start, '=');
+  size_t name_len = eq ? (size_t)(eq - name_start) : strlen(name_start);
+
+  int opt_idx = find_long_option(name_start, name_len);
+  if (opt_idx == -2) {
+    fprintf(stderr, "Ambiguous option '%s'.\n", arg);
+    return -1;
+  }
+  if (opt_idx < 0) {
+    fprintf(stderr, "Invalid option '%s'.\n", arg);
+    return -1;
+  }
+
+  char* value = NULL;
+  if (CliOptions[opt_idx].arg_name) {
+    if (eq) {
+      value = eq + 1;
+    } else if (has_next_arg(state)) {
+      value = next_arg(state);
+    } else {
+      fprintf(stderr,
+              "Missing required argument '%s' for option '--%s'.\n",
+              CliOptions[opt_idx].arg_name,
+              CliOptions[opt_idx].long_name);
+      return -1;
+    }
+  }
+
+  int res = apply_option(opt_idx, value, state->result);
+  if (res != 0) {
+    return res;
+  }
+
+  return 0;
+}
+
+static int parse_short_options(CliParseState* state) {
+  char* arg = current_arg(state);
+  char* ch = arg + 1;
+
+  while (*ch != '\0') {
+    int opt_idx = find_short_option(*ch);
+    if (opt_idx < 0) {
+      fprintf(stderr, "Invalid option '-%c'.\n", *ch);
+      return -1;
+    }
+
+    char* value = NULL;
+    if (CliOptions[opt_idx].arg_name) {
+      /* This option requires a value */
+      if (*(ch + 1) != '\0') {
+        value = ch + 1;
+      } else if (has_next_arg(state)) {
+        value = next_arg(state);
+      } else {
+        fprintf(stderr, "Missing required argument '%s' for option '-%c'.\n",
+                CliOptions[opt_idx].arg_name, *ch);
+        return -1;
+      }
+    }
+
+    int res = apply_option(opt_idx, value, state->result);
+    if (res != 0) {
+      return res;
+    }
+
+    if (value) {
+      /* Option handling ends after reading argument */
+      break;
+    }
+
+    ++ch;
+  }
+
+  return 0;
 }
 
 void print_help(const char* progname) {
@@ -89,16 +269,7 @@ void print_help(const char* progname) {
 }
 
 int parse_args(int argc, char** argv, CliArgs* parsed) {
-  enum {
-    MAX_OPTSTRING = CLI_OPTION_COUNT*2 + 2
-  };
-  int opt = 0;
-  int option_index = 0;
-  struct option long_options[CLI_OPTION_COUNT + 1];
-  char optstring[MAX_OPTSTRING];
-  get_long_options(long_options);
-  get_optstring(optstring, sizeof(optstring));
-
+  parsed->program_name = argv[0];
   parsed->source_dir = NULL;
   parsed->target_dir = NULL;
   parsed->tag_count = 0;
@@ -106,77 +277,48 @@ int parse_args(int argc, char** argv, CliArgs* parsed) {
   parsed->verbose = 0;
   parsed->force = 0;
 
-  while ((opt = getopt_long(argc, argv, optstring, long_options, &option_index)) != -1) {
-    switch (opt) {
-    case 't':
-      if (parsed->tag_count < CLI_MAX_TAGS) {
-        parsed->tags[parsed->tag_count] = optarg;
-        ++parsed->tag_count;
-      } else {
-        fprintf(stderr, "Too many tags (max %d)\n", CLI_MAX_TAGS);
-        return -1;
-      }
+  CliParseState state = {
+    .argc = argc,
+    .argv = argv,
+    .arg_index = 0,
+    .result = parsed
+  };
+
+  while (has_next_arg(&state)) {
+    const char* arg = next_arg(&state);
+
+    if (is_terminator(arg)) {
       break;
-    case 's':
-      if (parsed->source_dir) {
-        fprintf(stderr, "Source directory can only be specified once\n");
-        return -1;
-      }
-      if (strlen(optarg) == 0) {
-        fprintf(stderr, "Source directory name cannot be empty\n");
-        return -1;
-      }
-      parsed->source_dir = optarg;
-      break;
-    case 'd':
-      if (parsed->target_dir) {
-        fprintf(stderr, "Target directory can only be specified once\n");
-        return -1;
-      }
-      if (strlen(optarg) == 0) {
-        fprintf(stderr, "Target directory name cannot be empty\n");
-        return -1;
-      }
-      parsed->target_dir = optarg;
-      break;
-    case 'v':
-      parsed->verbose = 1;
-      break;
-    case 'f':
-      parsed->force = 1;
-      break;
-    case 0:
-      parsed->dry_run = 1;
-      break;
-    case 'h':
-      print_help(argv[0]);
-      exit(0);
-    case ':':
-      if (optopt == 0 && long_options[option_index].name != NULL) {
-        fprintf(
-          stderr,
-          "Missing argument for option '--%s'.\n",
-          long_options[option_index].name
-        );
-      } else {
-        fprintf(stderr, "Missing argument for option '-%c'.\n", optopt);
-      }
-      return -1;
-    case '?':
-      fprintf(stderr, "Invalid option '-%c'.\n", optopt);
-      return -1;
-    default:
-      fprintf(stderr, "?? ERROR: getopt_long returned 0%o ??\n", opt);
-      abort();
     }
+
+    if (is_long_option(arg)) {
+      int res = parse_long_option(&state);
+      if (res != 0) {
+        return res;
+      }
+      continue;
+    }
+
+    if (is_short_option(arg)) {
+      int res = parse_short_options(&state);
+      if (res != 0) {
+        return res;
+      }
+      continue;
+    }
+
+    fprintf(stderr, "Unexpected argument '%s'\n", arg);
+    return -1;
   }
+
   if (!parsed->source_dir || !parsed->target_dir) {
     fprintf(stderr, "Error: --source and --target are required.\n");
     return -1;
   }
 
-  if (argv[optind] != NULL) {
-    fprintf(stderr, "Unexpected argument '%s'\n", argv[optind]);
+  if (has_next_arg(&state)) {
+    char* unexpected = next_arg(&state);
+    fprintf(stderr, "Unexpected argument '%s'\n", unexpected);
     return -1;
   }
 
@@ -188,7 +330,7 @@ int parse_args(int argc, char** argv, CliArgs* parsed) {
   }
   ++source_end;
   *source_end = '\0';
-  
+
   /* Remove trailing slashes from target */
   size_t target_len = strlen(parsed->target_dir);
   char* target_end = parsed->target_dir + target_len - 1;
