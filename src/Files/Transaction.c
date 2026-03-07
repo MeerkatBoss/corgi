@@ -157,14 +157,18 @@ static file_error_t copy_file(
   }
 
   /* Forbid overwriting existing file unless force flag is set */
-  if (!options->force) {
+  {
     struct stat st;
     if (stat(dest_path, &st) == 0) {
-      result = FERR_ALREADY_EXISTS;
-      goto quit;
+      if (!options->force) {
+        result = FERR_ALREADY_EXISTS;
+        goto quit;
+      }
+      if (options->verbose) {
+        fprintf(stderr, "Warning: Overwriting existing file '%s'\n", dest_path);
+      }
     }
   }
-  /* TODO: report overwrite in verbose mode */
 
   /* Open destination file */
   dest = fopen(dest_path, "wb");
@@ -411,11 +415,16 @@ static file_error_t prepare_single_operation(
 file_error_t file_transaction_prepare(
   FileTransaction* transaction,
   const FileIndex* index,
-  const TransactionOptions* options
+  const TransactionOptions* options,
+  const char** failed_path
 ) {
   PANIC_IF_NULL(transaction);
   PANIC_IF_NULL(index);
   PANIC_IF_NULL(options);
+
+  if (failed_path != NULL) {
+    *failed_path = NULL;
+  }
 
   if (options->verbose) {
     printf("Preparing %zu operations...\n", index->file_count);
@@ -444,6 +453,9 @@ file_error_t file_transaction_prepare(
     );
     
     if (result != FERR_NONE) {
+      if (failed_path != NULL) {
+        *failed_path = file->path;
+      }
       if (options->verbose) {
         fprintf(stderr, "  Failed to prepare operation for: %s\n", file->path);
       }

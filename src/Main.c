@@ -55,10 +55,16 @@ static file_error_t execute_operations(
   }
   transaction_initialized = 1;
 
-  result = file_transaction_prepare(&transaction, index, options);
+  const char* failed_path = NULL;
+  result = file_transaction_prepare(&transaction, index, options, &failed_path);
   if (result != FERR_NONE) {
-    fprintf(stderr, "Error: Failed to prepare file operations: %s\n",
-            file_error_to_string(result));
+    if (failed_path != NULL) {
+      fprintf(stderr, "Error: Failed to prepare operation for '%s': %s\n",
+              failed_path, file_error_to_string(result));
+    } else {
+      fprintf(stderr, "Error: Failed to prepare file operations: %s\n",
+              file_error_to_string(result));
+    }
     if (result == FERR_ALREADY_EXISTS) {
       fprintf(stderr, "Hint: use --force to allow overwriting of files\n");
     }
@@ -74,7 +80,7 @@ static file_error_t execute_operations(
   result = file_transaction_commit(&transaction, options);
   if (result != FERR_NONE) {
     fprintf(stderr, "Error: Failed to commit operations: %s\n",
-            directory_error_to_string(result));
+            file_error_to_string(result));
     fprintf(stderr, "Warning: Cannot safely rollback after commit failure.\n");
     fprintf(stderr, "Target files have been preserved to prevent data loss.\n");
     goto cleanup;
