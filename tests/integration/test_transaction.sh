@@ -41,4 +41,20 @@ test_group "Force flag"
     assert_contains "Content was updated" "$content" "updated content"
 finish_test || exit 1
 
+test_group "Overwrite warning in verbose mode"
+    rm -rf "$SOURCE_DIR" "$TARGET_DIR"
+    mkdir -p "$SOURCE_DIR" "$TARGET_DIR"
+    create_test_file "$SOURCE_DIR/test.txt" "original content"
+
+    assert_success "Works first time" \
+        "$BINARY" --source "$SOURCE_DIR" --target "$TARGET_DIR"
+
+    create_test_file "$SOURCE_DIR/test.txt" "updated content"
+    output=$("$BINARY" --source "$SOURCE_DIR" --target "$TARGET_DIR" \
+                       --force --verbose 2>&1)
+
+    assert_contains "Overwrite warning reported" \
+        "$output" "Warning: Overwriting existing file '$TARGET_DIR/"
+finish_test || exit 1
+
 exit 0

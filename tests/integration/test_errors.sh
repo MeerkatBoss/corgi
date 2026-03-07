@@ -43,6 +43,7 @@ test_group "File collision"
                        --target "$TARGET_DIR" 2>&1 || true)
 
     assert_contains "Error reported" "$output" "Error:"
+    assert_contains "Source path reported" "$output" "$SOURCE_DIR/test.txt"
     assert_contains "Cause reported" "$output" "already exists"
     assert_contains "Force suggested" "$output" "--force"
 finish_test || exit 1

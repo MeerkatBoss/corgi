@@ -56,10 +56,6 @@ void file_cleanup(IndexedFile* file) {
   file->path = NULL;
 }
 
-static int string_compare(const void* lhs, const void* rhs) {
-  return strcmp(*(const char* const*) lhs, *(const char* const*) rhs);
-}
-
 static const char* get_extension(const char* path) {
   const char* last_dot = strrchr(path, '.');
   const char* last_slash = strrchr(path, '/');
@@ -182,11 +178,27 @@ file_error_t file_add_tag(IndexedFile* file, const char* tag) {
     return FERR_INVALID_VALUE;
   }
 
+  /* Find insertion position in sorted array; detect duplicates */
+  size_t insert_pos = 0;
+  for (; insert_pos < file->tag_count; insert_pos++) {
+    int cmp = strcmp(file->tags[insert_pos], tag);
+    if (cmp == 0) {
+      return FERR_NONE; /* Duplicate — silent no-op */
+    }
+    if (cmp > 0) {
+      break;
+    }
+  }
+
   if (file->tag_count == FILE_MAX_TAGS) {
     return FERR_INVALID_OPERATION;
   }
 
-  file->tags[file->tag_count] = copy_string(tag);
+  /* Shift elements right to make room at insert_pos */
+  for (size_t i = file->tag_count; i > insert_pos; i--) {
+    file->tags[i] = file->tags[i - 1];
+  }
+  file->tags[insert_pos] = copy_string(tag);
   ++file->tag_count;
 
   return FERR_NONE;
@@ -200,17 +212,12 @@ size_t file_get_unique_tags(
   PANIC_IF_NULL(file);
   PANIC_IF_NULL(unique_tags);
 
-  const char* tags[FILE_MAX_TAGS];
-  for (size_t i = 0; i < file->tag_count; ++i) {
-    tags[i] = file->tags[i];
-  }
-  qsort((void*) tags, file->tag_count, sizeof(tags[0]), string_compare);
-  size_t count = 0;
-  for (size_t i = 0; i < file->tag_count && count < unique_count; ++i) {
-    if (i == 0 || strcmp(tags[i], tags[i-1]) != 0) {
-      unique_tags[count] = tags[i];
-      count++;
-    }
+  size_t count =
+    file->tag_count < unique_count 
+      ? file->tag_count
+      : unique_count;
+  for (size_t i = 0; i < count; i++) {
+    unique_tags[i] = file->tags[i];
   }
   return count;
 }
@@ -219,23 +226,23 @@ int file_remove_tag(IndexedFile* file, const char* tag) {
   PANIC_IF_NULL(file);
   PANIC_IF_NULL(tag);
 
-  int removed_count = 0;
-  size_t i = 0;
-  
-  while (i < file->tag_count) {
+  /* Tags are sorted and deduplicated, so at most one match exists */
+  for (size_t i = 0; i < file->tag_count; i++) {
     if (strcmp(file->tags[i], tag) != 0) {
-      i++;
       continue;
     }
 
     free(file->tags[i]);
-    file->tags[i] = file->tags[file->tag_count - 1];
+    /* Shift remaining elements left to preserve sorted order */
+    for (size_t j = i; j < file->tag_count - 1; j++) {
+      file->tags[j] = file->tags[j + 1];
+    }
     file->tags[file->tag_count - 1] = NULL;
     file->tag_count--;
-    removed_count++;
+    return 1;
   }
-  
-  return removed_count;
+
+  return 0;
 }
 
 void file_clear_tags(IndexedFile* file) {

@@ -72,21 +72,22 @@ file_error_t file_transaction_init(
 
 /**
  * @brief Clean up transaction and free resources
- *
- * @param transaction Transaction to cleanup
  */
 void file_transaction_cleanup(FileTransaction* transaction);
 
 /**
  * @brief Prepare transaction for files in index
  *
- * @return FERR_NONE on success
- *         error code on failure (no operations committed)
+ * @return FERR_NONE on success,
+ *         error code on failure (no operations committed); if @p failed_path
+ *         is non-NULL it is set to the source path of the file that caused
+ *         the failure (valid as long as the source FileIndex is alive)
  */
 file_error_t file_transaction_prepare(
   FileTransaction* transaction,
   const FileIndex* index,
-  const TransactionOptions* options
+  const TransactionOptions* options,
+  const char** failed_path
 );
 
 /**
