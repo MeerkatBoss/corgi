@@ -65,8 +65,10 @@ test_group "Duplicate tags"
 
     target_file=$(find "$TARGET_DIR" -type f | head -1)
     filename=$(basename "$target_file")
-    assert_contains_count "Duplicate tag removed" \
+    assert_contains_count "Duplicate tag appears only once" \
         "$filename" "vacation" 1
+    assert_contains "Tags sorted alphabetically" \
+        "$filename" "summer_vacation"
 finish_test || exit 1
 
 test_group "Preserve extension"
