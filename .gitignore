@@ -4,5 +4,3 @@ build/
 .tmp/
 doc/
 .vscode/
-.cursor
-CLAUDE.md
