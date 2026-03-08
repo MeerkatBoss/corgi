@@ -26,11 +26,11 @@ OBJEXT   := o
 DEPEXT   := d
 
 SOURCES := $(wildcard $(SRCDIR)/*.$(SRCEXT)) \
-           $(wildcard $(SRCDIR)/Common/*.$(SRCEXT)) \
-           $(wildcard $(SRCDIR)/Files/*.$(SRCEXT))
+					 $(wildcard $(SRCDIR)/Common/*.$(SRCEXT)) \
+					 $(wildcard $(SRCDIR)/Files/*.$(SRCEXT))
 
 HEADERS := $(wildcard $(SRCDIR)/*.$(HEADEXT)) \
-           $(wildcard $(SRCDIR)/*/*.$(HEADEXT))
+					 $(wildcard $(SRCDIR)/*/*.$(HEADEXT))
 
 OBJECTS := $(patsubst $(SRCDIR)/%,$(BUILD_OBJ)/%, $(SOURCES:.$(SRCEXT)=.$(OBJEXT)))
 DEPS    := $(patsubst $(SRCDIR)/%,$(BUILD_MAKE)/%,$(SOURCES:.$(SRCEXT)=.$(DEPEXT)))
@@ -52,8 +52,8 @@ BLUE  := "\033[34m"
 
 define require-tool
 $(if $(shell which $(1) 2>/dev/null),,\
-  $(error $(2) requires $(1) but it was not found. \
-          Please install $(1) and try again))
+	$(error $(2) requires $(1) but it was not found. \
+					Please install $(1) and try again))
 endef
 
 # ==============================================================================
@@ -61,9 +61,9 @@ endef
 # ==============================================================================
 
 CC ?= $(shell which clang 2>/dev/null || \
-               which gcc 2>/dev/null || \
-               which cc 2>/dev/null || \
-               echo "cc")
+							 which gcc 2>/dev/null || \
+							 which cc 2>/dev/null || \
+							 echo "cc")
 CC := $(shell which $(CC))
 
 # Detect compiler type by checking version string
@@ -71,8 +71,8 @@ CC_VERSION := $(shell $(CC) --version 2>/dev/null)
 
 IS_CLANG := $(if $(findstring clang,$(CC_VERSION)),1,0)
 IS_GCC   := $(if $(findstring gcc,$(CC_VERSION))\
-                 $(findstring GCC,$(CC_VERSION))\
-                 $(findstring Free Software Foundation,$(CC_VERSION)),1,0)
+								 $(findstring GCC,$(CC_VERSION))\
+								 $(findstring Free Software Foundation,$(CC_VERSION)),1,0)
 
 export CC
 $(info $(shell echo $(call color,BROWN,Selected compiler) $(CC)))
@@ -110,7 +110,7 @@ LDFLAGS  :=
 
 MUSL ?= 0
 ifeq ($(MUSL),1)
-	ifneq ($(strip $(SANITIZERS)),)
+	ifneq ($(strip $(SANITIZERS)),"")
 $(warning "Sanitizers are not supported in MUSL builds")
 	endif
 
@@ -182,7 +182,7 @@ init:
 compiler-info:
 	@echo "Detected compiler: $(CC)"
 	@echo "Compiler type: $(if $(filter 1,$(IS_CLANG)),Clang,\
-	                          $(if $(filter 1,$(IS_GCC)),GCC,Unknown))"
+														$(if $(filter 1,$(IS_GCC)),GCC,Unknown))"
 	@echo "Version info:"
 	@$(CC) --version
 
@@ -195,8 +195,8 @@ $(BUILD_OBJ)/%.$(OBJEXT): $(SRCDIR)/%.$(SRCEXT)
 	@mkdir -p $(dir $@) $(dir $(BUILD_MAKE)/$*.$(DEPEXT))
 	@echo CC $@
 	@$(CC) $(CFLAGS) $(INCFLAGS) \
-    -MMD -MP -MF $(BUILD_MAKE)/$*.$(DEPEXT) -c $< -o $@ \
-	  || (echo $(call color,RED,\>! Failed to build $@ from $< !\<); exit 1)
+		-MMD -MP -MF $(BUILD_MAKE)/$*.$(DEPEXT) -c $< -o $@ \
+		|| (echo $(call color,RED,\>! Failed to build $@ from $< !\<); exit 1)
 
 # Build project binary
 $(BUILD_BIN)/$(PROJECT): $(OBJECTS)
@@ -204,7 +204,7 @@ $(BUILD_BIN)/$(PROJECT): $(OBJECTS)
 	@echo LD $@
 	@$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $(BUILD_BIN)/$(PROJECT) \
 		|| (echo $(call color,RED,=== Failed to build project $(PROJECT) ===); \
-		    exit 1)
+				exit 1)
 	@echo $(call color,GREEN,=== Build done! ===)
 
 # ==============================================================================
@@ -264,10 +264,10 @@ distcheck: $(DISTTAR)
 	@mkdir -p .tmp/distcheck
 	@tar -xzf $(DISTTAR) -C .tmp/distcheck
 	@cd .tmp/distcheck/$(DISTDIR) && \
-	    $(MAKE) all TARGET=Release CC=$(CC) && \
-	    $(MAKE) test TARGET=Release CC=$(CC) && \
-	    $(MAKE) install DESTDIR=$$(pwd)/install-check prefix=/usr && \
-	    test -f $$(pwd)/install-check/usr/bin/$(PROJECT)
+			$(MAKE) all TARGET=Release CC=$(CC) && \
+			$(MAKE) test TARGET=Release CC=$(CC) && \
+			$(MAKE) install DESTDIR=$$(pwd)/install-check prefix=/usr && \
+			test -f $$(pwd)/install-check/usr/bin/$(PROJECT)
 	@rm -rf .tmp/distcheck
 	@echo $(call color,GREEN,=== distcheck passed! ===)
 
@@ -297,5 +297,5 @@ test-integration: $(BUILD_BIN)/$(PROJECT) test-setup
 	 /bin/sh $(TEST_INTEGRATION_DIR)/runner.sh $(TESTS)
 
 .PHONY: all remake clean cleaner run init debug doc view-doc check tidy \
-        compiler-info install uninstall dist distclean distcheck \
-        test test-integration test-clean test-setup
+				compiler-info install uninstall dist distclean distcheck \
+				test test-integration test-clean test-setup
