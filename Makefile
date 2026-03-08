@@ -137,7 +137,7 @@ CDEBUG := -D_DEBUG -ggdb -fstack-protector -fstrict-overflow \
 	-fno-omit-frame-pointer
 
 ifneq ($(strip $(SANITIZERS)),"")
-	CDEBUG := CDEBUG -fsanitize=$(SANITIZERS)
+	CDEBUG := $(CDEBUG) -fsanitize=$(SANITIZERS)
 endif
 
 TARGET ?= Debug
