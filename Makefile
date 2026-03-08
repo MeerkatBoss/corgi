@@ -10,10 +10,13 @@ TESTDIR  := tests
 LIBDIR   := lib
 INCDIR   := include
 
-BUILDDIR := build
-OBJDIR   := $(BUILDDIR)/obj
-BINDIR   := $(BUILDDIR)/bin
-MAKEDIR  := $(BUILDDIR)/make
+BUILDDIR   := build
+BUILD_OBJ  := $(BUILDDIR)/obj
+BUILD_BIN  := $(BUILDDIR)/bin
+BUILD_MAKE := $(BUILDDIR)/make
+
+DISTDIR := $(PROJECT)-$(VERSION)
+DISTTAR := $(DISTDIR).tar.gz
 
 DOCDIR   := doc
 
@@ -29,8 +32,8 @@ SOURCES := $(wildcard $(SRCDIR)/*.$(SRCEXT)) \
 HEADERS := $(wildcard $(SRCDIR)/*.$(HEADEXT)) \
            $(wildcard $(SRCDIR)/*/*.$(HEADEXT))
 
-OBJECTS := $(patsubst $(SRCDIR)/%,$(OBJDIR)/%, $(SOURCES:.$(SRCEXT)=.$(OBJEXT)))
-DEPS    := $(patsubst $(SRCDIR)/%,$(MAKEDIR)/%,$(SOURCES:.$(SRCEXT)=.$(DEPEXT)))
+OBJECTS := $(patsubst $(SRCDIR)/%,$(BUILD_OBJ)/%, $(SOURCES:.$(SRCEXT)=.$(OBJEXT)))
+DEPS    := $(patsubst $(SRCDIR)/%,$(BUILD_MAKE)/%,$(SOURCES:.$(SRCEXT)=.$(DEPEXT)))
 
 # ==============================================================================
 # Terminal Colors
@@ -131,10 +134,18 @@ DOXYGEN    ?= doxygen
 CLANG_TIDY ?= clang-tidy
 
 # ==============================================================================
+# Install Configuration
+# ==============================================================================
+
+prefix  ?= /usr/local
+bindir  ?= $(DESTDIR)$(prefix)/bin
+INSTALL ?= install
+
+# ==============================================================================
 # Meta targets
 # ==============================================================================
 
-all: $(BINDIR)/$(PROJECT)
+all: $(BUILD_BIN)/$(PROJECT)
 
 doc: $(DOCDIR)/html/index.html
 
@@ -162,18 +173,18 @@ compiler-info:
 # ==============================================================================
 
 # Build source objects
-$(OBJDIR)/%.$(OBJEXT): $(SRCDIR)/%.$(SRCEXT)
-	@mkdir -p $(dir $@) $(dir $(MAKEDIR)/$*.$(DEPEXT))
+$(BUILD_OBJ)/%.$(OBJEXT): $(SRCDIR)/%.$(SRCEXT)
+	@mkdir -p $(dir $@) $(dir $(BUILD_MAKE)/$*.$(DEPEXT))
 	@echo CC $@
 	@$(CC) $(CFLAGS) $(INCFLAGS) \
-    -MMD -MP -MF $(MAKEDIR)/$*.$(DEPEXT) -c $< -o $@ \
+    -MMD -MP -MF $(BUILD_MAKE)/$*.$(DEPEXT) -c $< -o $@ \
 	  || (echo $(call color,RED,\>! Failed to build $@ from $< !\<); exit 1)
 
 # Build project binary
-$(BINDIR)/$(PROJECT): $(OBJECTS)
+$(BUILD_BIN)/$(PROJECT): $(OBJECTS)
 	@mkdir -p $(dir $@)
 	@echo LD $@
-	@$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $(BINDIR)/$(PROJECT) \
+	@$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $(BUILD_BIN)/$(PROJECT) \
 		|| (echo $(call color,RED,=== Failed to build project $(PROJECT) ===); \
 		    exit 1)
 	@echo $(call color,GREEN,=== Build done! ===)
@@ -185,19 +196,19 @@ $(BINDIR)/$(PROJECT): $(OBJECTS)
 # Remove objects
 clean:
 	@echo $(call color,BLUE,\> Removing object files)
-	@rm -rf $(OBJDIR)
+	@rm -rf $(BUILD_OBJ)
 
 # Remove objects, dependency makefiles, and binaries
 cleaner: clean
 	@echo $(call color,BLUE,\> Removing all build files)
-	@rm -rf $(BINDIR)
-	@rm -rf $(MAKEDIR)
+	@rm -rf $(BUILD_BIN)
+	@rm -rf $(BUILD_MAKE)
 
 # Run project
-run: $(BINDIR)/$(PROJECT)
+run: $(BUILD_BIN)/$(PROJECT)
 	@$< $(ARGS)
 
-debug: $(BINDIR)/$(PROJECT)
+debug: $(BUILD_BIN)/$(PROJECT)
 	@$(call require-tool,$(GDB),Debug target)
 	@$(GDB) --args $< $(ARGS)
 
@@ -205,6 +216,40 @@ check:
 	@$(call require-tool,$(CLANG_TIDY),Code checking)
 	@$(CLANG_TIDY) -p $(BUILDDIR) $(SOURCES) -header-filter=.* -- \
 	 $(CFLAGS) $(INCFLAGS)
+
+install: $(BUILD_BIN)/$(PROJECT)
+	@mkdir -p $(bindir)
+	@$(INSTALL) -m 755 $< $(bindir)/$(PROJECT)
+	@echo "Installed $(PROJECT) to $(bindir)/$(PROJECT)"
+
+uninstall:
+	@rm -f $(bindir)/$(PROJECT)
+	@echo "Uninstalled $(PROJECT) from $(bindir)/$(PROJECT)"
+
+# ==============================================================================
+# Distribution Targets
+# ==============================================================================
+
+dist: $(DISTTAR)
+
+$(DISTTAR):
+	@git archive --format=tar.gz --prefix=$(DISTDIR)/ HEAD > $(DISTTAR)
+	@echo "Created $(DISTTAR)"
+
+distclean: cleaner
+	@rm -rf $(DISTTAR) $(DISTDIR) .tmp/distcheck
+
+distcheck: $(DISTTAR)
+	@rm -rf .tmp/distcheck
+	@mkdir -p .tmp/distcheck
+	@tar -xzf $(DISTTAR) -C .tmp/distcheck
+	@cd .tmp/distcheck/$(DISTDIR) && \
+	    $(MAKE) all TARGET=Release CC=$(CC) && \
+	    $(MAKE) test TARGET=Release CC=$(CC) && \
+	    $(MAKE) install DESTDIR=$$(pwd)/install-check prefix=/usr && \
+	    test -f $$(pwd)/install-check/usr/bin/$(PROJECT)
+	@rm -rf .tmp/distcheck
+	@echo $(call color,GREEN,=== distcheck passed! ===)
 
 -include $(DEPS)
 
@@ -224,11 +269,12 @@ test-clean:
 	@echo $(call color,BLUE,\> Cleaning test artifacts)
 	@rm -rf $(TEST_DIR)
 
-test-integration: $(BINDIR)/$(PROJECT) test-setup
+test-integration: $(BUILD_BIN)/$(PROJECT) test-setup
 	@echo $(call color,BROWN,Running integration tests...)
 	@TEST_DIR=$(TEST_DIR) \
-	 CORGI_BINARY=$(BINDIR)/$(PROJECT) \
+	 CORGI_BINARY=$(BUILD_BIN)/$(PROJECT) \
 	 /bin/sh $(TEST_INTEGRATION_DIR)/runner.sh $(TESTS)
 
 .PHONY: all remake clean cleaner run init debug doc view-doc check \
-        compiler-info test test-integration test-clean test-setup
+        compiler-info install uninstall dist distclean distcheck \
+        test test-integration test-clean test-setup
