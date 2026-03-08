@@ -27,21 +27,22 @@ CI job that builds with musl and verifies `file ... | grep "statically linked"`.
 ## Tasks
 
 ### M1.1: Make Targets
-- [ ] Add `PREFIX`, `DESTDIR`, `BINDIR` variables
-- [ ] Implement `install` target (create dir, install binary mode 755)
-- [ ] Implement `uninstall` target
-- [ ] Implement `dist` target (source tarball `$(PROJECT)-$(VERSION).tar.gz`)
-- [ ] Implement `distcheck` target (extract, build, test, cleanup)
-- [ ] Implement `distclean` target
-- [ ] Add all new targets to `.PHONY`
-- [ ] Write integration tests for install/uninstall
+- [x] Add `prefix`, `DESTDIR`, `bindir` variables
+- [x] Implement `install` target (create dir, install binary mode 755)
+- [x] Implement `uninstall` target
+- [x] Implement `dist` target (source tarball `$(PROJECT)-$(VERSION).tar.gz`)
+- [x] Implement `distcheck` target (extract, build, test, cleanup)
+- [x] Implement `distclean` target
+- [x] Add all new targets to `.PHONY`
+- [x] Write integration tests for install/uninstall
+- [x] `make check` runs tests per GNU standard; clang-tidy moved to `make tidy`
 
 ### M1.2: musl
-- [ ] Add `MUSL` flag; when set, use `musl-gcc` and `-static`
-- [ ] Disable sanitizers for musl builds
-- [ ] Test: static binary produced and runs on minimal system
+- [x] Add `MUSL` flag; when set, use `musl-gcc` and `-static`
+- [x] Disable sanitizers for musl builds
+- [x] Test: static binary produced and runs on minimal system
 
 ### M1.3: CI
-- [ ] Add `build-musl` CI job
-- [ ] Add `distcheck` CI job
-- [ ] Upload static binary as CI artifact
+- [x] Add `build-musl` CI job
+- [x] Add `distcheck` CI job
+- [x] Upload static binary as CI artifact

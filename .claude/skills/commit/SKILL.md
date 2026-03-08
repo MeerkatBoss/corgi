@@ -67,8 +67,9 @@ Use the module or area name: `cli`, `files`, `transaction`, `index`,
 
 ### Rules
 
-- Summary line: imperative mood, lowercase, no period, max 72 chars
+- Summary line: imperative mood, lowercase, no period, max 50 chars
 - Body: wrap at 72 chars, explain *what* and *why* (not *how*)
+- Do not write the body for simple commits with few changes
 - Reference issue numbers if applicable
 
 ### Examples

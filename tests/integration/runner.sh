@@ -35,6 +35,7 @@ export GREEN
 export RED
 export YELLOW
 export NC
+export MAKE
 
 setup_test_env() {
     mkdir -p "$TEST_DIR"

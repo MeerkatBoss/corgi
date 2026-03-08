@@ -13,7 +13,8 @@ make all                    # Debug build (default)
 TARGET=Release make all     # Release build
 make run ARGS="..."         # Build and run
 make test                   # Integration tests
-make check                  # clang-tidy
+make check                  # Alias for test (GNU standard)
+make tidy                   # clang-tidy static analysis
 make clean                  # Remove objects
 make cleaner                # Remove all build artifacts
 ```

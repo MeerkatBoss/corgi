@@ -180,4 +180,47 @@ jobs:
         bear -- make all
 
     - name: Run clang-tidy
-      run: make check
+      run: make tidy
+
+  build-musl:
+    name: Build (musl static)
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y musl-tools make
+
+    - name: Build static binary
+      run: make all MUSL=1 TARGET=Release
+
+    - name: Verify static binary
+      run: file build/bin/corgi | grep "statically linked"
+
+    - name: Upload static binary
+      uses: actions/upload-artifact@v4
+      with:
+        name: corgi-linux-musl-static
+        path: build/bin/corgi
+        retention-days: 7
+
+  distcheck:
+    name: Distcheck
+    runs-on: ubuntu-latest
+    needs: build-linux-macos
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc make git
+
+    - name: Run distcheck
+      run: make distcheck
