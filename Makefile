@@ -116,6 +116,12 @@ CFLAGS   := -std=c99 -fPIE $(CMACHINE) $(CWARN)
 INCFLAGS := -I$(SRCDIR) -I$(INCDIR)
 LDFLAGS  :=
 
+define require-tool
+$(if $(shell which $(1) 2>/dev/null),,\
+  $(error $(2) requires $(1) but it was not found. \
+          Please install $(1) and try again))
+endef
+
 TARGET ?= Debug
 ifeq ($(TARGET), Release)
 	CFLAGS := -O3 $(CFLAGS)
@@ -123,11 +129,13 @@ else
 	CFLAGS := -O0 $(CDEBUG) $(CFLAGS)
 endif
 
-define require-tool
-$(if $(shell which $(1) 2>/dev/null),,\
-  $(error $(2) requires $(1) but it was not found. \
-          Please install $(1) and try again))
-endef
+MUSL ?= 0
+ifeq ($(MUSL),1)
+$(call require-tool,musl-gcc,musl build)
+	override CC      := musl-gcc
+	LDFLAGS          := -static $(LDFLAGS)
+	CFLAGS           := $(filter-out $(CDEBUG),$(CFLAGS))
+endif
 
 GDB        ?= gdb
 DOXYGEN    ?= doxygen
