@@ -26,11 +26,11 @@ OBJEXT   := o
 DEPEXT   := d
 
 SOURCES := $(wildcard $(SRCDIR)/*.$(SRCEXT)) \
-					 $(wildcard $(SRCDIR)/Common/*.$(SRCEXT)) \
-					 $(wildcard $(SRCDIR)/Files/*.$(SRCEXT))
+			$(wildcard $(SRCDIR)/Common/*.$(SRCEXT)) \
+			$(wildcard $(SRCDIR)/Files/*.$(SRCEXT))
 
 HEADERS := $(wildcard $(SRCDIR)/*.$(HEADEXT)) \
-					 $(wildcard $(SRCDIR)/*/*.$(HEADEXT))
+			 $(wildcard $(SRCDIR)/*/*.$(HEADEXT))
 
 OBJECTS := $(patsubst $(SRCDIR)/%,$(BUILD_OBJ)/%, $(SOURCES:.$(SRCEXT)=.$(OBJEXT)))
 DEPS    := $(patsubst $(SRCDIR)/%,$(BUILD_MAKE)/%,$(SOURCES:.$(SRCEXT)=.$(DEPEXT)))
@@ -61,9 +61,9 @@ endef
 # ==============================================================================
 
 CC ?= $(shell which clang 2>/dev/null || \
-							 which gcc 2>/dev/null || \
-							 which cc 2>/dev/null || \
-							 echo "cc")
+				 which gcc 2>/dev/null || \
+				 which cc 2>/dev/null || \
+				 echo "cc")
 CC := $(shell which $(CC))
 
 # Detect compiler type by checking version string
@@ -71,8 +71,8 @@ CC_VERSION := $(shell $(CC) --version 2>/dev/null)
 
 IS_CLANG := $(if $(findstring clang,$(CC_VERSION)),1,0)
 IS_GCC   := $(if $(findstring gcc,$(CC_VERSION))\
-								 $(findstring GCC,$(CC_VERSION))\
-								 $(findstring Free Software Foundation,$(CC_VERSION)),1,0)
+				 $(findstring GCC,$(CC_VERSION))\
+				 $(findstring Free Software Foundation,$(CC_VERSION)),1,0)
 
 export CC
 $(info $(shell echo $(call color,BROWN,Selected compiler) $(CC)))
@@ -114,17 +114,17 @@ ifeq ($(MUSL),1)
 $(warning "Sanitizers are not supported in MUSL builds")
 	endif
 
-	override CC      := $(shell which musl-gcc)
+	override CC := $(shell which musl-gcc)
 $(info $(shell echo $(call color,BROWN,Overriding compiler) $(CC)))
-	SANITIZERS       := ""
-	LDFLAGS          := -static $(LDFLAGS)
+	SANITIZERS := ""
+	LDFLAGS    := -static $(LDFLAGS)
 endif
 
 ifndef SANITIZERS
-	SANITIZERS := address,alignment,bool,bounds,enum,float-cast-overflow,${strip \
+	SANITIZERS := address,alignment,bool,bounds,float-cast-overflow,${strip \
 		}float-divide-by-zero,integer-divide-by-zero,nonnull-attribute,${strip \
-		}return,returns-nonnull-attribute,shift,signed-integer-overflow,${strip \
-		}undefined,unreachable,vla-bound,vptr,null
+		}return,returns-nonnull-attribute,signed-integer-overflow,${strip \
+		}undefined,unreachable,vla-bound,vptr,null,enum,shift
 
 # Add leak sanitizer only on non-macOS platforms
 # (on macOS, leak detection is included in AddressSanitizer)
@@ -134,7 +134,7 @@ ifndef SANITIZERS
 endif
 
 CDEBUG := -D_DEBUG -ggdb -fstack-protector -fstrict-overflow \
-	-fno-omit-frame-pointer
+			-fno-omit-frame-pointer
 
 ifneq ($(strip $(SANITIZERS)),"")
 	CDEBUG := $(CDEBUG) -fsanitize=$(SANITIZERS)
@@ -182,7 +182,7 @@ init:
 compiler-info:
 	@echo "Detected compiler: $(CC)"
 	@echo "Compiler type: $(if $(filter 1,$(IS_CLANG)),Clang,\
-														$(if $(filter 1,$(IS_GCC)),GCC,Unknown))"
+							$(if $(filter 1,$(IS_GCC)),GCC,Unknown))"
 	@echo "Version info:"
 	@$(CC) --version
 
