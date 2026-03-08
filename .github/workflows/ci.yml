@@ -180,7 +180,7 @@ jobs:
         bear -- make all
 
     - name: Run clang-tidy
-      run: make check
+      run: make tidy
 
   build-musl:
     name: Build (musl static)

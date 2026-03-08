@@ -220,7 +220,9 @@ debug: $(BUILD_BIN)/$(PROJECT)
 	@$(call require-tool,$(GDB),Debug target)
 	@$(GDB) --args $< $(ARGS)
 
-check:
+check: test
+
+tidy:
 	@$(call require-tool,$(CLANG_TIDY),Code checking)
 	@$(CLANG_TIDY) -p $(BUILDDIR) $(SOURCES) -header-filter=.* -- \
 	 $(CFLAGS) $(INCFLAGS)
@@ -283,6 +285,6 @@ test-integration: $(BUILD_BIN)/$(PROJECT) test-setup
 	 CORGI_BINARY=$(BUILD_BIN)/$(PROJECT) \
 	 /bin/sh $(TEST_INTEGRATION_DIR)/runner.sh $(TESTS)
 
-.PHONY: all remake clean cleaner run init debug doc view-doc check \
+.PHONY: all remake clean cleaner run init debug doc view-doc check tidy \
         compiler-info install uninstall dist distclean distcheck \
         test test-integration test-clean test-setup
