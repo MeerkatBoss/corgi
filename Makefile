@@ -283,6 +283,7 @@ test-integration: $(BUILD_BIN)/$(PROJECT) test-setup
 	@echo $(call color,BROWN,Running integration tests...)
 	@TEST_DIR=$(TEST_DIR) \
 	 CORGI_BINARY=$(BUILD_BIN)/$(PROJECT) \
+	 MAKE=$(MAKE) \
 	 /bin/sh $(TEST_INTEGRATION_DIR)/runner.sh $(TESTS)
 
 .PHONY: all remake clean cleaner run init debug doc view-doc check tidy \

@@ -3,14 +3,13 @@
 set -eu
 . "$(dirname "$0")/assertions.sh"
 
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 INSTALL_DIR="$TEST_DIR/install-test"
+MAKE="${MAKE:-make}"
 
 test_group "Install binary"
     rm -rf "$INSTALL_DIR"
 
-    make -C "$PROJECT_ROOT" install \
-        DESTDIR="$INSTALL_DIR" prefix=/usr > /dev/null 2>&1
+    "$MAKE" install DESTDIR="$INSTALL_DIR" prefix=/usr > /dev/null 2>&1
 
     assert_file_exists "Binary installed" \
         "$INSTALL_DIR/usr/bin/corgi"
@@ -28,8 +27,7 @@ test_group "Install binary"
 finish_test || exit 1
 
 test_group "Uninstall binary"
-    make -C "$PROJECT_ROOT" uninstall \
-        DESTDIR="$INSTALL_DIR" prefix=/usr > /dev/null 2>&1
+    "$MAKE" uninstall DESTDIR="$INSTALL_DIR" prefix=/usr > /dev/null 2>&1
 
     assert_file_not_exists "Binary removed" \
         "$INSTALL_DIR/usr/bin/corgi"
