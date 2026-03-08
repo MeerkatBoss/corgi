@@ -50,6 +50,11 @@ BROWN := "\033[33m"
 RED   := "\033[91m"
 BLUE  := "\033[34m"
 
+define require-tool
+$(if $(shell which $(1) 2>/dev/null),,\
+  $(error $(2) requires $(1) but it was not found. \
+          Please install $(1) and try again))
+endef
 
 # ==============================================================================
 # Compiler configuration
@@ -71,6 +76,8 @@ IS_GCC   := $(if $(findstring gcc,$(CC_VERSION))\
 
 export CC
 $(info $(shell echo $(call color,BROWN,Selected compiler) $(CC)))
+
+UNAME_S := $(shell uname -s)
 
 # Common warnings
 CWARN_COMMON := -Wall -Wextra -Wcast-align -Wcast-qual -Wchar-subscripts \
@@ -95,46 +102,49 @@ $(warning "Unknown compiler, build potentially not supported")
 	CWARN := $(CWARN_COMMON)
 endif
 
-SANITIZERS := address,alignment,bool,bounds,enum,float-cast-overflow,${strip \
-	}float-divide-by-zero,integer-divide-by-zero,nonnull-attribute,null,${strip \
-  }return,returns-nonnull-attribute,shift,signed-integer-overflow,${strip \
-  }undefined,unreachable,vla-bound,vptr
-
-# Add leak sanitizer only on non-macOS platforms
-# (on macOS, leak detection is included in AddressSanitizer)
-UNAME_S := $(shell uname -s)
-ifneq ($(UNAME_S),Darwin)
-	SANITIZERS := $(SANITIZERS),leak
-endif
-
-CDEBUG := -D_DEBUG -ggdb -fstack-protector -fstrict-overflow \
-	-fno-omit-frame-pointer -fsanitize=$(SANITIZERS)
-
 CMACHINE :=
 
 CFLAGS   := -std=c99 -fPIE $(CMACHINE) $(CWARN)
 INCFLAGS := -I$(SRCDIR) -I$(INCDIR)
 LDFLAGS  :=
 
-define require-tool
-$(if $(shell which $(1) 2>/dev/null),,\
-  $(error $(2) requires $(1) but it was not found. \
-          Please install $(1) and try again))
-endef
+MUSL ?= 0
+ifeq ($(MUSL),1)
+	ifneq ($(strip $(SANITIZERS)),)
+$(warning "Sanitizers are not supported in MUSL builds")
+	endif
+
+	override CC      := $(shell which musl-gcc)
+$(info $(shell echo $(call color,BROWN,Overriding compiler) $(CC)))
+	SANITIZERS       := ""
+	LDFLAGS          := -static $(LDFLAGS)
+endif
+
+ifndef SANITIZERS
+	SANITIZERS := address,alignment,bool,bounds,enum,float-cast-overflow,${strip \
+		}float-divide-by-zero,integer-divide-by-zero,nonnull-attribute,${strip \
+		}return,returns-nonnull-attribute,shift,signed-integer-overflow,${strip \
+		}undefined,unreachable,vla-bound,vptr,null
+
+# Add leak sanitizer only on non-macOS platforms
+# (on macOS, leak detection is included in AddressSanitizer)
+	ifneq ($(UNAME_S),Darwin)
+		SANITIZERS := $(SANITIZERS),leak
+	endif
+endif
+
+CDEBUG := -D_DEBUG -ggdb -fstack-protector -fstrict-overflow \
+	-fno-omit-frame-pointer
+
+ifneq ($(strip $(SANITIZERS)),"")
+	CDEBUG := CDEBUG -fsanitize=$(SANITIZERS)
+endif
 
 TARGET ?= Debug
 ifeq ($(TARGET), Release)
 	CFLAGS := -O3 $(CFLAGS)
 else
 	CFLAGS := -O0 $(CDEBUG) $(CFLAGS)
-endif
-
-MUSL ?= 0
-ifeq ($(MUSL),1)
-$(call require-tool,musl-gcc,musl build)
-	override CC      := musl-gcc
-	LDFLAGS          := -static $(LDFLAGS)
-	CFLAGS           := $(filter-out $(CDEBUG),$(CFLAGS))
 endif
 
 GDB        ?= gdb
