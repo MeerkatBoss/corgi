@@ -1,54 +1,67 @@
 ---
 name: commit
-description: Prepare and create a git commit. Updates TODO.md, plan files, and CHANGELOG.md before committing with a Conventional Commits message.
+description: Prepare and create one atomic git commit for a completed logical unit of work in the corgi project. Reviews the diff, updates TODO.md, the relevant .claude/plan/ milestone file, and CHANGELOG.md, then commits with a Conventional Commits message and a mandatory Co-authored-by trailer. Use whenever changes are ready to commit, the user asks to commit, or /project:commit is invoked — including at each logical boundary during milestone work.
 disable-model-invocation: false
+context: fork
+model: haiku
+allowed-tools: Read, Edit, Glob, Bash(git status), Bash(git diff *), Bash(git add *), Bash(git commit *), Bash(git log *)
 ---
 
 # Commit Skill
 
-Prepare a clean commit for the current changes. Follow these steps in order.
+Prepare and create one atomic commit for the current logical unit of work.
+An atomic commit captures a single coherent change together with the
+documentation updates it implies. Follow these steps in order.
 
 ## 1. Review Changes
 
-Run `git diff --staged` and `git diff` to understand all changes.
-If nothing is staged, stage the relevant files with `git add`.
-Do not stage unrelated changes.
+Run `git status` and `git diff` (plus `git diff --staged` if anything is
+already staged) to understand every change in the working tree.
+Identify which changes belong to the current logical unit. If unrelated
+changes exist, stage only the relevant files and report the rest — never
+`git add .` blindly.
 
 ## 2. Update TODO.md
 
-Check if any items in `TODO.md` were addressed by the changes.
-- Mark completed items by removing them or noting they are done
-- Add new TODOs discovered during implementation
-- Do not modify items unrelated to the current changes
+Check whether any items in `TODO.md` were addressed by the changes.
+- Mark completed items as done (or remove them).
+- Add new TODOs discovered during implementation.
+- Do not touch items unrelated to the current changes.
 
 ## 3. Update Plan Files
 
-Check which milestone in `.claude/plan/` the changes belong to.
+Determine which milestone in `.claude/plan/` the changes belong to.
 In the relevant `mN-*.md` file, check off completed tasks
 (change `- [ ]` to `- [x]`). Only mark tasks that are fully done.
 
 ## 4. Update CHANGELOG.md
 
-Add a brief entry under `### [Unreleased]` in the appropriate
-subsection (Added, Changed, Fixed, Removed).
-Follow Keep a Changelog format. Be concise — one line per change.
+Add a concise entry under `### [Unreleased]` in the appropriate subsection
+(Added, Changed, Fixed, Removed), following Keep a Changelog format.
+One line per change.
 
-## 5. Stage Documentation Updates
+## 5. Stage the Commit
+
+Stage only the source files and documentation that belong to this logical
+unit:
 
 ```sh
-git add TODO.md CHANGELOG.md .claude/plan/
+git add <source files> TODO.md CHANGELOG.md .claude/plan/<milestone file>
 ```
 
-Stage only the files that were actually modified.
+Stage only files that were actually modified. If unrelated changes remain
+in the working tree, leave them unstaged and note them.
 
-## 6. Compose Commit Message
+## 6. Compose the Commit Message
 
 Use Conventional Commits format:
 
 ```
-<type>[optional scope]: <short summary>
+<type>(<scope>): <short summary>
 
 [optional body]
+
+Co-authored-by: Claude <noreply@anthropic.com>
 ```
 
 ### Types
@@ -57,35 +70,89 @@ Use Conventional Commits format:
 - `fix` — bug fix
 - `refactor` — code restructuring without behavior change
 - `test` — adding or modifying tests
-- `chore` — maintenance, CI, build system, documentation
+- `chore` — maintenance, CI, build system
 - `docs` — documentation-only changes
+- `style` — formatting or whitespace, no behavior change
 
 ### Scope
 
-Use the module or area name: `cli`, `files`, `transaction`, `index`,
-`common`, `makefile`, `ci`, `tests`
+Use the corgi module or area name: `cli`, `files`, `transaction`, `index`,
+`common`, `makefile`, `ci`, `tests`.
 
-### Rules
+### Summary rules
 
-- Summary line: imperative mood, lowercase, no period, max 50 chars
-- Body: wrap at 72 chars, explain *what* and *why* (not *how*)
-- Do not write the body for simple commits with few changes
-- Reference issue numbers if applicable
+- Imperative mood, lowercase start, no trailing period.
+- HARD LIMIT: 50 characters total, including the `type(scope):` prefix.
+- Be concise: `feat(files): add tag insertion` not
+  `feat(files): add the ability to insert tags into the index`.
+- If the summary exceeds 50 chars, shorten it — prefer abbreviation and
+  dropping articles over adding a body to compensate.
 
-### Examples
+### Body rules (rare)
+
+- Only when the summary alone cannot convey what changed and why.
+- Separate from the summary with a blank line. Wrap at 72 chars.
+- Explain *what* and *why*, not *how*. Omit for simple commits.
+- Reference issue numbers if applicable.
+
+### Co-authored-by trailer (mandatory)
+
+Every commit MUST end with this trailer, separated from the summary (or
+body) by a blank line:
 
 ```
-feat(cli): add --update flag for incremental directory sync
-fix(transaction): handle EEXIST race in create_directory
-refactor(files): maintain sorted tag invariant on insertion
-test(tags): add tests for duplicate tag handling
+Co-authored-by: Claude <noreply@anthropic.com>
+```
+
+## 7. Create the Commit
+
+Summary-only (the common case):
+
+```sh
+git commit -m "feat(cli): add --update flag for sync
+
+Co-authored-by: Claude <noreply@anthropic.com>"
+```
+
+With a body (rare):
+
+```sh
+git commit -m "refactor(transaction): use two-phase commit
+
+Stage all filesystem operations before applying any, so a
+failure mid-commit leaves the media directory unchanged.
+
+Co-authored-by: Claude <noreply@anthropic.com>"
+```
+
+Do not pass `--no-verify`; let any hooks run.
+
+## 8. Verify
+
+Confirm the result with:
+
+```sh
+git log --oneline -3
+```
+
+## Examples
+
+Summary-only commits (the common case):
+
+```
+feat(cli): add --update flag for directory sync
+fix(transaction): handle mkdir EEXIST race
+refactor(files): keep tags sorted on insert
+test(tags): cover duplicate tag handling
 chore(makefile): add install and dist targets
 ```
 
-## 7. Create Commit
+## Rules
 
-```sh
-git commit
-```
-
-Do not use `--no-verify`. Let any hooks run.
+- Never `git add .` blindly — always review `git status` first.
+- Stage only the files for the current logical unit; note any unrelated
+  changes left behind.
+- Never amend or force-push unless explicitly asked.
+- If the working tree is clean, report that and do nothing.
+- The `Co-authored-by` trailer is mandatory on every commit — never omit it.
+- Do not use `--no-verify`.
