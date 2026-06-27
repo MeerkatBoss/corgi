@@ -1,9 +1,17 @@
 ---
 name: test
 description: Write and run integration tests for corgi. Use when creating new tests, debugging test failures, or running the test suite.
+allowed-tools: Read, Glob, Grep, Edit(tests/**), Bash(make all:*), Bash(make test:*), Bash(make test-integration:*), Bash(make check:*), Bash(make test-setup:*), Bash(make test-clean:*)
 ---
 
 # Testing Skill
+
+## File access
+
+This skill may edit files only under `tests/`. It may read source for
+context, but it must not modify `src/`, build files, or CI config. It
+runs only the test and build `make` targets listed above.
+
 
 ## Running Tests
 
@@ -17,8 +25,8 @@ make test-clean                     # Remove test artifacts
 
 ### Environment Variables
 
-- `TEST_DIR` — temporary test files (default: `.tmp/tests`)
-- `CORGI_BINARY` — path to binary (default: `build/bin/corgi`)
+- `TEST_DIR` -- temporary test files (default: `.tmp/tests`)
+- `CORGI_BINARY` -- path to binary (default: `build/bin/corgi`)
 
 ## Writing New Tests
 
@@ -54,22 +62,22 @@ exit 0
 
 ## Assertions
 
-- `assert_success(desc, command...)` — command must exit 0
-- `assert_failure(desc, command...)` — command must exit non-zero
-- `assert_file_exists(desc, path)` — file must exist
-- `assert_file_not_exists(desc, path)` — file must not exist
-- `assert_contains(desc, haystack, needle)` — string contains substring
-- `assert_contains_count(desc, haystack, needle, count)` — substring
+- `assert_success(desc, command...)` -- command must exit 0
+- `assert_failure(desc, command...)` -- command must exit non-zero
+- `assert_file_exists(desc, path)` -- file must exist
+- `assert_file_not_exists(desc, path)` -- file must not exist
+- `assert_contains(desc, haystack, needle)` -- string contains substring
+- `assert_contains_count(desc, haystack, needle, count)` -- substring
   appears exactly `count` times
-- `assert_filename_matches(desc, filename, regex)` — filename matches
-- `assert_files_identical(desc, file1, file2)` — byte-identical files
-- `assert_file_count(desc, dir, count)` — directory has N files
+- `assert_filename_matches(desc, filename, regex)` -- filename matches
+- `assert_files_identical(desc, file1, file2)` -- byte-identical files
+- `assert_file_count(desc, dir, count)` -- directory has N files
 
 ## Helpers
 
-- `test_group(name)` — start a named test group
-- `finish_test()` — finalize group result (call at end of each group)
-- `create_test_file(path, content)` — create a file with content
+- `test_group(name)` -- start a named test group
+- `finish_test()` -- finalize group result (call at end of each group)
+- `create_test_file(path, content)` -- create a file with content
 
 ## Rules
 

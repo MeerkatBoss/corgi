@@ -1,10 +1,10 @@
-# M6: Interactive Session — Full Feature Set
+# M6: Interactive Session -- Full Feature Set
 
 Complete remaining interactive session features from Requirements.md.
 
 ## M6.1: Move vs Copy Selection
 
-Toggle default action (copy ↔ move) with keybind. `--move` CLI flag.
+Toggle default action (copy <-> move) with keybind. `--move` CLI flag.
 Status bar indicator.
 
 ## M6.2: Per-File Tag Editing
@@ -25,7 +25,7 @@ implemented and tested.
 ## Tasks
 
 - [ ] Status bar indicator for default action
-- [ ] Keybind `M` to toggle copy ↔ move
+- [ ] Keybind `M` to toggle copy <-> move
 - [ ] `--move` CLI flag
 - [ ] Tag display in file detail area
 - [ ] Apply tag to selection

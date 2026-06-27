@@ -1,4 +1,4 @@
-# M4: Interactive Session — Core TUI
+# M4: Interactive Session -- Core TUI
 
 Terminal user interface for interactive file organization.
 
@@ -14,7 +14,7 @@ tags). Status bar (mode, progress, default action). Message bar.
 
 ## M4.3: Session Logic (`src/Session/Session.c`)
 
-Main loop: render → read key → dispatch. Key bindings: `j`/`k`/arrows
+Main loop: render -> read key -> dispatch. Key bindings: `j`/`k`/arrows
 (navigate), `c`/`m`/`i`/`d` (actions), `t`/`T` (add/remove tag),
 `v` (select), `A` (select all), `Enter` (finalize), `q` (quit).
 
@@ -63,4 +63,4 @@ marking actions, and batch-processing files.
 ### Tests
 - [ ] Scripted keystrokes via stdin pipe
 - [ ] Verify actions applied correctly
-- [ ] Quit without changes → no files modified
+- [ ] Quit without changes -> no files modified

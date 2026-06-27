@@ -1,4 +1,4 @@
-# Development Plan — corgi MVP v1.0.0
+# Development Plan -- corgi MVP v1.0.0
 
 ## Milestone Overview
 
@@ -7,13 +7,13 @@
 | M1 | GNU Make targets & musl support  | `m1-packaging.md` | -          |
 | M2 | Directory update feature         | `m2-update.md`    | -          |
 | M3 | Search by date and tags          | `m3-search.md`    | -          |
-| M4 | Interactive session — core TUI   | `m4-tui.md`       | -          |
+| M4 | Interactive session -- core TUI   | `m4-tui.md`       | -          |
 | M5 | JPEG viewer integration          | `m5-viewer.md`    | M4         |
-| M6 | Interactive session — full       | `m6-session.md`   | M4, M5     |
-| M7 | Release preparation              | `m7-release.md`   | M1–M6      |
+| M6 | Interactive session -- full       | `m6-session.md`   | M4, M5     |
+| M7 | Release preparation              | `m7-release.md`   | M1-M6      |
 
-M1–M3 are independent and can be developed in parallel.
-M4–M6 are sequential. M7 is the final integration milestone.
+M1-M3 are independent and can be developed in parallel.
+M4-M6 are sequential. M7 is the final integration milestone.
 
 ## Current State
 

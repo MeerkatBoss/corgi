@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Edit(docs/**)",
+      "Edit(TODO.md)",
+      "Edit(CHANGELOG.md)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git branch:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(make all:*)",
+      "Bash(make run:*)",
+      "Bash(make test:*)",
+      "Bash(make test-integration:*)",
+      "Bash(make check:*)",
+      "Bash(make tidy:*)",
+      "Bash(make clean:*)",
+      "Bash(make cleaner:*)"
+    ],
+    "deny": [
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)"
+    ]
+  }
+}

@@ -5,7 +5,7 @@ Display the current file during interactive session.
 ## M5.1: Viewer Abstraction (`src/Viewer/Viewer.c`)
 
 `viewer_init()`, `viewer_show(path)`, `viewer_close()`.
-Backend priority: `feh` → `imv` → `sxiv` → `xdg-open`.
+Backend priority: `feh` -> `imv` -> `sxiv` -> `xdg-open`.
 
 ## M5.2: Process Management
 
@@ -32,9 +32,9 @@ Navigation updates displayed image.
 
 - [ ] Define `Viewer` struct and interface
 - [ ] Implement external viewer backend detection
-- [ ] `viewer_show()` — launch/update child process
-- [ ] `viewer_close()` — SIGTERM → wait → SIGKILL
-- [ ] Handle `SIGCHLD` (viewer crash → set flag)
+- [ ] `viewer_show()` -- launch/update child process
+- [ ] `viewer_close()` -- SIGTERM -> wait -> SIGKILL
+- [ ] Handle `SIGCHLD` (viewer crash -> set flag)
 - [ ] TUI integration: call `viewer_show()` on navigation
 - [ ] Add `--no-viewer` flag
 - [ ] Test: `--no-viewer` works without viewer binary

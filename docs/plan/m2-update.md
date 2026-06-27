@@ -33,7 +33,7 @@ numbering from where target left off.
 - [ ] Set starting index per date from target's max + 1
 - [ ] Handle edge case: target doesn't exist (copy all)
 - [ ] Handle edge case: target has no matching filenames
-- [ ] Test: update empty target → all copied
-- [ ] Test: update with existing files → only new copied
+- [ ] Test: update empty target -> all copied
+- [ ] Test: update with existing files -> only new copied
 - [ ] Test: index numbering continuity
 - [ ] Test: update with `--dry-run`

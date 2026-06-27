@@ -33,7 +33,7 @@ and passing CI.
 ### Documentation
 - [ ] Write README.md (description, install, usage, build, contributing)
 - [ ] Update CHANGELOG.md for v1.0.0
-- [ ] `make doc` — Doxygen builds without warnings
+- [ ] `make doc` -- Doxygen builds without warnings
 
 ### Release
 - [ ] Bump `VERSION` in Makefile to `1.0.0`

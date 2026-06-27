@@ -30,5 +30,5 @@ matching files.
 - [ ] Test: search by multiple tags (AND)
 - [ ] Test: search by date range
 - [ ] Test: combined date + tag
-- [ ] Test: no matches → empty output, exit 0
+- [ ] Test: no matches -> empty output, exit 0
 - [ ] Test: empty directory

@@ -10,18 +10,22 @@ and this project adheres to
 ### [Unreleased]
 
 #### Added
-- GNU standard `install`, `uninstall`, `dist`, `distcheck`, `distclean` make targets
-- `make check` runs integration tests per GNU standard; clang-tidy moved to `make tidy`
+- GNU standard `install`, `uninstall`, `dist`, `distcheck`,
+  `distclean` make targets
+- `make check` runs integration tests per GNU standard;
+  clang-tidy moved to `make tidy`
 - `make all MUSL=1 TARGET=Release` produces a fully static binary via `musl-gcc`
 - CI jobs for musl static build verification and `distcheck`
 - Integration tests for `make install` / `make uninstall`
 - File indexing system for scanning and organizing files in directories
-- File transaction system with two-phase commit (prepare/commit/rollback) for safe file operations
+- File transaction system with two-phase commit
+  (prepare/commit/rollback) for safe file operations
 - Command-line interface (CLI) for user interaction
 - Tag manipulation functions for managing file metadata
 - String utility functions for common string operations
 - Intrusive linked list implementation for efficient data structures
-- File naming format with timestamp and tag support (`YYYY-MM-DD_XXX_tag1_tag2.ext`)
+- File naming format with timestamp and tag support
+  (`YYYY-MM-DD_XXX_tag1_tag2.ext`)
 - Automatic file index numbering in filenames
 - Alphabetical sorting of tags in filenames
 - Doxygen documentation configuration

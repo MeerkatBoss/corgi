@@ -18,7 +18,7 @@ paths:
 | Macros              | UPPER_CASE         | `PANIC_IF_NULL`        |
 
 New modules follow `prefix_*` pattern matching their header path
-(e.g., `Files/Index.h` → `file_index_*`).
+(e.g., `Files/Index.h` -> `file_index_*`).
 
 ## Memory Management
 
