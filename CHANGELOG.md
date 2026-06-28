@@ -40,6 +40,8 @@ and this project adheres to
   modify file dates before naming (offset tokens normalize calendar
   dates correctly; absolute forms require all source files to share a
   date)
+- Destination files now have their mtime and atime set to match the
+  computed timestamp when using `--date` or `--set-*` flags
 
 #### Changed
 - Portable build process

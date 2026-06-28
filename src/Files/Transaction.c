@@ -6,6 +6,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <utime.h>
 
 #include "Common/Panic.h"
 #include "Common/Strings.h"
@@ -486,6 +487,26 @@ quit:
   return result;
 }
 
+/**
+ * Sets both access and modification time of `path` to `timestamp`.
+ *
+ * @note Applied during commit, not prepare: for moves, `prepare` may have
+ * hardlinked the target to the source (sharing one inode), and setting
+ * the timestamp there would also alter the source's mtime -- a side
+ * effect that would survive a `rollback`. Commit is already the point
+ * past which rollback is not attempted, so there is no such hazard here.
+ */
+static file_error_t set_destination_timestamp(const char* path, time_t timestamp) {
+  struct utimbuf times;
+  times.actime = timestamp;
+  times.modtime = timestamp;
+
+  if (utime(path, &times) != 0) {
+    return FERR_ACCESS_DENIED;
+  }
+  return FERR_NONE;
+}
+
 static file_error_t commit_move_operation(
   PreparedOperation* op,
   const TransactionOptions* options
@@ -497,6 +518,17 @@ static file_error_t commit_move_operation(
     }
     return FERR_ACCESS_DENIED;
   }
+
+  file_error_t result = set_destination_timestamp(
+    op->target_path, op->source_file->override_timestamp
+  );
+  if (result != FERR_NONE) {
+    if (options->verbose) {
+      fprintf(stderr, "  Failed to set timestamp: %s\n", op->target_path);
+    }
+    return result;
+  }
+
   if (options->verbose) {
     printf("  Committed move: %s\n", op->source_file->path);
   }
@@ -530,8 +562,18 @@ static file_error_t commit_copy_operation(
   PreparedOperation* op,
   const TransactionOptions* options
 ) {
+  file_error_t result = set_destination_timestamp(
+    op->target_path, op->source_file->override_timestamp
+  );
+  if (result != FERR_NONE) {
+    if (options->verbose) {
+      fprintf(stderr, "  Failed to set timestamp: %s\n", op->target_path);
+    }
+    return result;
+  }
+
   if (options->verbose) {
-    printf("  Nothing to commit for %s (copied)\n", op->source_file->path);
+    printf("  Committed copy: %s\n", op->source_file->path);
   }
   return FERR_NONE;
 }

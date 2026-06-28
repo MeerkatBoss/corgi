@@ -18,7 +18,7 @@
 - [x] Reject mixing offset and absolute categories at parse time
 - [x] Apply timestamp overrides to indexed files
 - [x] Check same-date precondition for absolute overrides
-- [ ] Persist `override_timestamp` as destination mtime/atime
+- [x] Persist `override_timestamp` as destination mtime/atime
 - [ ] Implement per-date numbering
 # CI
 - [x] Check for building with musl instead of glibc
