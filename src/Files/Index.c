@@ -6,6 +6,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <string.h>
+#include <time.h>
 
 #include "Files/Error.h"
 #include "Files/File.h"
@@ -117,6 +118,33 @@ file_error_t file_index_read_directory(FileIndex* index, const char* source_path
     file_index_clear(index);
   }
   return result;
+}
+
+int file_index_dates_match(const FileIndex* index) {
+  PANIC_IF_NULL(index);
+
+  int has_first = 0;
+  struct tm first_date;
+  memset(&first_date, 0, sizeof(first_date));
+
+  LIST_CONST_FOREACH(node, index->files) {
+    const IndexedFile* file = (const IndexedFile*) node;
+    struct tm date = *gmtime(&file->real_timestamp);
+
+    if (!has_first) {
+      first_date = date;
+      has_first = 1;
+      continue;
+    }
+
+    if (date.tm_year != first_date.tm_year
+        || date.tm_mon != first_date.tm_mon
+        || date.tm_mday != first_date.tm_mday) {
+      return 0;
+    }
+  }
+
+  return 1;
 }
 
 file_error_t file_index_add_tags(FileIndex* index, size_t tag_count, const char* tags[]) {

@@ -129,6 +129,34 @@ int main(int argc, char** argv) {
     goto cleanup;
   }
 
+  {
+    const CliDateOverride* cli_override = &args.date_override;
+    int has_absolute_override =
+      cli_override->year != 0
+      || cli_override->month != 0
+      || cli_override->day != 0;
+
+    if (has_absolute_override && !file_index_dates_match(&index)) {
+      fprintf(stderr,
+              "Error: cannot set date: source files have different dates\n");
+      result = FERR_INVALID_VALUE;
+      goto cleanup;
+    }
+
+    TimestampOverride override = {
+      .offset_year = cli_override->offset_year,
+      .offset_month = cli_override->offset_month,
+      .offset_day = cli_override->offset_day,
+      .year = cli_override->year,
+      .month = cli_override->month,
+      .day = cli_override->day
+    };
+    LIST_FOREACH(node, index.files) {
+      IndexedFile* file = (IndexedFile*) node;
+      file_apply_timestamp_override(file, &override);
+    }
+  }
+
   result = file_index_add_tags(&index, args.tag_count, args.tags);
   if (result != FERR_NONE) {
     fprintf(stderr, "Error: Failed to add tags to files: %s\n",

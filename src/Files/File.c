@@ -56,6 +56,99 @@ void file_cleanup(IndexedFile* file) {
   file->path = NULL;
 }
 
+/**
+ * Floor division/modulo (round toward negative infinity), needed because
+ * '/' and '%' truncate toward zero in C and would mishandle negative
+ * month offsets.
+ */
+static long long floor_div(long long a, long long b) {
+  long long quotient = a / b;
+  long long remainder = a % b;
+  if (remainder != 0 && ((remainder < 0) != (b < 0))) {
+    quotient -= 1;
+  }
+  return quotient;
+}
+
+static long long floor_mod(long long a, long long b) {
+  long long remainder = a % b;
+  if (remainder != 0 && ((remainder < 0) != (b < 0))) {
+    remainder += b;
+  }
+  return remainder;
+}
+
+/**
+ * Days since 1970-01-01 for civil date (year, month, day), where `month`
+ * must be in [1, 12] but `day` may be any integer (including out of the
+ * normal 1-31 range) -- overflow/underflow in `day` carries into the
+ * result correctly. Howard Hinnant's well-known "days_from_civil"
+ * algorithm, extended to `long long` to avoid the range limits of
+ * `time_t`-sized arithmetic on platforms with 32-bit `time_t`.
+ */
+static long long days_from_civil(long long year, int month, long long day) {
+  long long y = year - (month <= 2 ? 1 : 0);
+  long long era = (y >= 0 ? y : y - 399) / 400;
+  long long year_of_era = y - era * 400;
+  long long day_of_year =
+    (153 * (month + (month > 2 ? -3 : 9)) + 2) / 5 + day - 1;
+  long long day_of_era =
+    year_of_era * 365 + year_of_era / 4 - year_of_era / 100 + day_of_year;
+  return era * 146097 + day_of_era - 719468;
+}
+
+/**
+ * Converts a possibly out-of-range (year, 0-based month, day) calendar
+ * date plus time-of-day into a UTC `time_t`. Avoids `timegm()`, which is
+ * not part of ISO C and is gated behind extension feature-test macros on
+ * some platforms.
+ */
+static time_t compute_utc_timestamp(
+  long long year,
+  long long month0,
+  long long day,
+  int hour,
+  int minute,
+  int second
+) {
+  long long total_months = year * 12 + month0;
+  long long normalized_year = floor_div(total_months, 12);
+  int normalized_month = (int) floor_mod(total_months, 12) + 1;
+
+  long long days = days_from_civil(normalized_year, normalized_month, day);
+  return (time_t) (
+    days * 86400LL + hour * 3600LL + minute * 60LL + second
+  );
+}
+
+void file_apply_timestamp_override(
+  IndexedFile* file,
+  const TimestampOverride* override
+) {
+  PANIC_IF_NULL(file);
+  PANIC_IF_NULL(override);
+
+  struct tm time = *gmtime(&file->real_timestamp);
+
+  long long year = 1900LL + time.tm_year + override->offset_year;
+  long long month0 = time.tm_mon + override->offset_month;
+  long long day = time.tm_mday + override->offset_day;
+
+  if (override->year != 0) {
+    year = (long long) override->year;
+  }
+  if (override->month != 0) {
+    month0 = (long long) override->month - 1;
+  }
+  if (override->day != 0) {
+    day = (long long) override->day;
+  }
+
+  file->override_timestamp = compute_utc_timestamp(
+    year, month0, day, time.tm_hour, time.tm_min, time.tm_sec
+  );
+}
+
 static const char* get_extension(const char* path) {
   const char* last_dot = strrchr(path, '.');
   const char* last_slash = strrchr(path, '/');

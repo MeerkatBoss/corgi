@@ -36,6 +36,10 @@ and this project adheres to
 - Github CI to run tests
 - Timestamp override CLI flags: `--date` (absolute or offset tokens)
   and `--set-year`/`-month`/`-day` (absolute, component-wise)
+- Timestamp override application: `--date` and `--set-*` flags now
+  modify file dates before naming (offset tokens normalize calendar
+  dates correctly; absolute forms require all source files to share a
+  date)
 
 #### Changed
 - Portable build process

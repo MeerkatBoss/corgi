@@ -56,6 +56,15 @@ file_error_t file_index_read_directory(
 );
 
 /**
+ * @brief Check whether all files in index share the same UTC calendar
+ * date (based on `real_timestamp`)
+ *
+ * @return Nonzero if all files share a date (or index is empty), zero
+ *         if at least two files disagree
+ */
+int file_index_dates_match(const FileIndex* index);
+
+/**
  * @brief Add multiple tags to all files in index
  *
  * @return FERR_NONE on success

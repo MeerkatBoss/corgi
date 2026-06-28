@@ -15,18 +15,19 @@ share a date) and `--date VALUE` (absolute `YYYY-MM-DD`, same
 precondition, or offset tokens like `"+1Y -1M +10D"`, mutually
 exclusive with the absolute forms).
 
-- [ ] Add `parse_int()` helper in `Cli.c`
-- [ ] Add `--set-year`/`-month`/`-day` flags (`Cli.h`/`Cli.c`)
-- [ ] Add `--date` flag: absolute `YYYY-MM-DD` parsing
-- [ ] Add `--date` flag: offset token parsing (`[+-]<digits><Y|M|D>`,
+- [x] Add `parse_int()` helper in `Cli.c`
+- [x] Add `--set-year`/`-month`/`-day` flags (`Cli.h`/`Cli.c`)
+- [x] Add `--date` flag: absolute `YYYY-MM-DD` parsing
+- [x] Add `--date` flag: offset token parsing (`[+-]<digits><Y|M|D>`,
       case-insensitive, repeatable, additive)
-- [ ] Reject mixing offset and absolute categories at parse time
-- [ ] `file_index_dates_match()` in `Files/Index.c`/`.h`
-- [ ] Same-date precondition check in `Main.c` (after indexing, before
+- [x] Reject mixing offset and absolute categories at parse time
+- [x] `file_index_dates_match()` in `Files/Index.c`/`.h`
+- [x] Same-date precondition check in `Main.c` (after indexing, before
       tagging)
-- [ ] `TimestampOverride` struct + `file_apply_timestamp_override()` in
-      `Files/File.c`/`.h` (uses `timegm`)
-- [ ] Wire override application into `Main.c`
+- [x] `TimestampOverride` struct + `file_apply_timestamp_override()` in
+      `Files/File.c`/`.h` (avoids `timegm()` with portable
+      `days_from_civil()` algorithm)
+- [x] Wire override application into `Main.c`
 - [ ] Tests: `--date` absolute/offset, `--set-*`, same-date error cases,
       offset+absolute mutual exclusion
 

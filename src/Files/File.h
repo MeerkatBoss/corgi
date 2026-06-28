@@ -55,13 +55,43 @@ typedef struct {
 } IndexedFile;
 
 /**
+ * @brief Calendar date override to apply to a file's `override_timestamp`
+ *
+ * `offset_*` fields are additive, applied to the file's own calendar date
+ * (from `real_timestamp`). `year`/`month`/`day` are absolute replacements
+ * applied afterward, with `0` meaning "not given" (left as computed by
+ * the offset). Both kinds can be given together, though CLI parsing only
+ * ever produces one or the other.
+ */
+typedef struct {
+  int offset_year;   /*!< Additive year offset */
+  int offset_month;  /*!< Additive month offset */
+  int offset_day;    /*!< Additive day offset */
+  unsigned year;      /*!< Absolute year, 0 if not given */
+  unsigned month;     /*!< Absolute month (1-12), 0 if not given */
+  unsigned day;       /*!< Absolute day of month, 0 if not given */
+} TimestampOverride;
+
+/**
  * @brief Initialize file from path
- * 
+ *
  * @return FERR_NONE on success
  *         FERR_INVALID_VALUE on invalid path,
  *         FERR_ACCESS_DENIED if path cannot be accessed
  */
 file_error_t file_init(IndexedFile* file, const char* path);
+
+/**
+ * @brief Recompute `file->override_timestamp` from `real_timestamp` by
+ * applying `override`
+ *
+ * @note Time of day (hour/minute/second) is always preserved from
+ * `real_timestamp`; only the calendar date changes.
+ */
+void file_apply_timestamp_override(
+  IndexedFile* file,
+  const TimestampOverride* override
+);
 
 /**
  * @brief Deallocate resources used by IndexedFile
