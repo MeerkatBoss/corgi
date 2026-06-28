@@ -7,6 +7,8 @@
 - [ ] Optionally (if found) use Freedesktop `trash-put` utility for deleting
       files
 - [ ] Allow overriding of timestamp, set timestamp on moving/copying file
+- [ ] Use file descriptors for source and destination directories and files
+      to avoid TOCTOU issues
 - [x] Allow selecting between move and copy
 # CI
 - [x] Check for building with musl instead of glibc

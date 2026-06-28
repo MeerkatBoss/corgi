@@ -3,37 +3,88 @@
 Add only files from source that are newer than the most recent file
 in the target directory. Continue index numbering from target.
 
+Three prerequisites land first since M2.1's "per-date max index"
+requirement depends on them: CLI control over `override_timestamp`,
+persisting it as destination mtime/atime, and per-date (not global)
+numbering. See the approved plan for full design rationale.
+
+## Prereq 1: Timestamp override CLI flags
+
+`--set-year`/`-month`/`-day N` (absolute, requires all source files to
+share a date) and `--date VALUE` (absolute `YYYY-MM-DD`, same
+precondition, or offset tokens like `"+1Y -1M +10D"`, mutually
+exclusive with the absolute forms).
+
+- [ ] Add `parse_int()` helper in `Cli.c`
+- [ ] Add `--set-year`/`-month`/`-day` flags (`Cli.h`/`Cli.c`)
+- [ ] Add `--date` flag: absolute `YYYY-MM-DD` parsing
+- [ ] Add `--date` flag: offset token parsing (`[+-]<digits><Y|M|D>`,
+      case-insensitive, repeatable, additive)
+- [ ] Reject mixing offset and absolute categories at parse time
+- [ ] `file_index_dates_match()` in `Files/Index.c`/`.h`
+- [ ] Same-date precondition check in `Main.c` (after indexing, before
+      tagging)
+- [ ] `TimestampOverride` struct + `file_apply_timestamp_override()` in
+      `Files/File.c`/`.h` (uses `timegm`)
+- [ ] Wire override application into `Main.c`
+- [ ] Tests: `--date` absolute/offset, `--set-*`, same-date error cases,
+      offset+absolute mutual exclusion
+
+## Prereq 2: Persist override_timestamp as destination mtime/atime
+
+- [ ] `set_destination_timestamp()` in `Transaction.c` (`utime()`)
+- [ ] Call from `commit_copy_operation()` and `commit_move_operation()`
+      (commit phase, not prepare -- avoids the hardlink/rollback hazard)
+- [ ] Test: destination file mtime/atime match computed override date
+
+## Prereq 3: Per-date file numbering
+
+- [ ] `file_truncate_to_day()` helper in `Files/File.c`/`.h`
+- [ ] `file_format_date()` helper (refactor out of `file_generate_name`)
+- [ ] Replace global counter in `file_transaction_prepare()` with
+      per-date reset-on-change counter
+- [ ] Test: files spanning two dates get independent 001/002/... per date
+
 ## M2.1: Target Directory Scanning
 
-Implement `file_parse_organized_name()` to extract date, index, tags,
-extension from filenames. Scan target to determine max timestamp and
-per-date max index.
+- [ ] `OrganizedName` struct + `file_parse_organized_name()` in
+      `Files/File.c`/`.h`
+- [ ] `DateIndexEntry`/`DateIndexTable` (intrusive linked list) in
+      `Files/Index.c`/`.h`
+- [ ] `file_index_scan_target()`: parse target filenames, track max
+      timestamp + per-date max index, skip non-matching filenames
+- [ ] Detect filename-date vs. mtime mismatch in target files: report
+      error, exclude from accounting, continue scanning
+- [ ] `// TODO`: configurable date source of truth (filename vs. mtime)
+      and a way to repair drifted target dates -- out of scope for M2
+- [ ] Handle target directory missing (`ENOENT`) -> empty table, no error
+- [ ] Tests for name parsing and target scanning (including mismatch and
+      missing-target cases)
 
 ## M2.2: Update Mode
 
-`--update` / `-u` CLI flag. Skip source files not newer than target.
-Respect existing index numbering.
+- [ ] `--update`/`-u` CLI flag
+- [ ] `file_index_filter_newer_than()` in `Files/Index.c`/`.h`
+- [ ] Wire scan + filter into `Main.c` when `--update` is set
+- [ ] Seed per-date counter in `file_transaction_prepare()` from the
+      scanned `DateIndexTable` (extend its signature/options)
+- [ ] Handle edge case: target doesn't exist (copy all)
+- [ ] Handle edge case: target has no matching filenames
 
 ## M2.3: Integration Tests
 
-Test empty target, existing files, index continuity.
+- [ ] Test: update empty/missing target -> all copied
+- [ ] Test: update with existing older files -> all copied, per-date
+      numbering continues from target's max + 1
+- [ ] Test: update with newer existing files -> only strictly-newer
+      source files copied
+- [ ] Test: index numbering continuity (per-date)
+- [ ] Test: update with `--dry-run`
 
 ## Exit Criteria
 
 `corgi -s src/ -d dst/ --update` copies only newer files and continues
-numbering from where target left off.
-
-## Tasks
-
-- [ ] Implement `file_parse_organized_name()` in `Files/File.c`
-- [ ] Implement target directory scanning (max timestamp, per-date max index)
-- [ ] Tests for name parsing
-- [ ] Add `--update` / `-u` CLI flag
-- [ ] Filter source index by recency relative to target
-- [ ] Set starting index per date from target's max + 1
-- [ ] Handle edge case: target doesn't exist (copy all)
-- [ ] Handle edge case: target has no matching filenames
-- [ ] Test: update empty target -> all copied
-- [ ] Test: update with existing files -> only new copied
-- [ ] Test: index numbering continuity
-- [ ] Test: update with `--dry-run`
+per-date numbering from where target left off. Timestamp override flags
+(`--date`, `--set-*`) work and are persisted as destination file
+metadata. File numbering is per-date everywhere, not just under
+`--update`.
