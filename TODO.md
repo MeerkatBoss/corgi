@@ -10,5 +10,11 @@
 - [ ] Use file descriptors for source and destination directories and files
       to avoid TOCTOU issues
 - [x] Allow selecting between move and copy
+# M2 Prerequisites (Timestamp Override CLI)
+- [x] Add `parse_int()` helper in `Cli.c`
+- [x] Add `--set-year`/`-month`/`-day` flags (`Cli.h`/`Cli.c`)
+- [x] Add `--date` flag: absolute `YYYY-MM-DD` parsing
+- [x] Add `--date` flag: offset token parsing
+- [x] Reject mixing offset and absolute categories at parse time
 # CI
 - [x] Check for building with musl instead of glibc

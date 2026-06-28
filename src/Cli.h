@@ -17,6 +17,26 @@ enum {
 };
 
 /**
+ * @brief Calendar date override requested through CLI flags
+ *
+ * `offset_year`/`offset_month`/`offset_day` are additive (from `--date`
+ * offset tokens). `year`/`month`/`day` are absolute replacements (from
+ * `--date`'s absolute form or `--set-year`/`-month`/`-day`); `0` means
+ * "not given". The offset fields and the absolute fields are mutually
+ * exclusive in practice (enforced at parse time), but both are kept on
+ * this struct since it is the parse result.
+ */
+typedef struct {
+  int offset_year;   /*!< Additive year offset */
+  int offset_month;  /*!< Additive month offset */
+  int offset_day;    /*!< Additive day offset */
+  unsigned year;      /*!< Absolute year, 0 if not given */
+  unsigned month;     /*!< Absolute month, 0 if not given */
+  unsigned day;       /*!< Absolute day, 0 if not given */
+  int has_offset;     /*!< Set if any offset token was given */
+} CliDateOverride;
+
+/**
  * @brief Command-line arguments structure
  */
 typedef struct {
@@ -28,6 +48,7 @@ typedef struct {
   int verbose;                    /*!< Verbose output flag */
   int dry_run;                    /*!< Dry-run mode flag */
   int force;                      /*!< Force overwrite flag */
+  CliDateOverride date_override;  /*!< Timestamp override from CLI flags */
 } CliArgs;
 
 /**

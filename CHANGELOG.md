@@ -34,6 +34,8 @@ and this project adheres to
 - Github CI to check successful builds
 - Automated integration testing
 - Github CI to run tests
+- Timestamp override CLI flags: `--date` (absolute or offset tokens)
+  and `--set-year`/`-month`/`-day` (absolute, component-wise)
 
 #### Changed
 - Portable build process
