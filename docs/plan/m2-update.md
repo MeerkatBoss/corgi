@@ -57,39 +57,39 @@ exclusive with the absolute forms).
 
 ## M2.1: Target Directory Scanning
 
-- [ ] `OrganizedName` struct + `file_parse_organized_name()` in
+- [x] `OrganizedName` struct + `file_parse_organized_name()` in
       `Files/File.c`/`.h`
-- [ ] `DateIndexEntry`/`DateIndexTable` (intrusive linked list) in
+- [x] `DateIndexEntry`/`DateIndexTable` (intrusive linked list) in
       `Files/Index.c`/`.h`
-- [ ] `file_index_scan_target()`: parse target filenames, track max
+- [x] `file_index_scan_target()`: parse target filenames, track max
       timestamp + per-date max index, skip non-matching filenames
-- [ ] Detect filename-date vs. mtime mismatch in target files: report
+- [x] Detect filename-date vs. mtime mismatch in target files: report
       error, exclude from accounting, continue scanning
-- [ ] `// TODO`: configurable date source of truth (filename vs. mtime)
+- [x] `// TODO`: configurable date source of truth (filename vs. mtime)
       and a way to repair drifted target dates -- out of scope for M2
-- [ ] Handle target directory missing (`ENOENT`) -> empty table, no error
-- [ ] Tests for name parsing and target scanning (including mismatch and
-      missing-target cases)
+- [x] Handle target directory missing (`ENOENT`) -> empty table, no error
+- [x] Tests for name parsing and target scanning (including mismatch and
+      missing-target cases) -- via `tests/integration/test_update.sh`
 
 ## M2.2: Update Mode
 
-- [ ] `--update`/`-u` CLI flag
-- [ ] `file_index_filter_newer_than()` in `Files/Index.c`/`.h`
-- [ ] Wire scan + filter into `Main.c` when `--update` is set
-- [ ] Seed per-date counter in `file_transaction_prepare()` from the
+- [x] `--update`/`-u` CLI flag
+- [x] `file_index_filter_newer_than()` in `Files/Index.c`/`.h`
+- [x] Wire scan + filter into `Main.c` when `--update` is set
+- [x] Seed per-date counter in `file_transaction_prepare()` from the
       scanned `DateIndexTable` (extend its signature/options)
-- [ ] Handle edge case: target doesn't exist (copy all)
-- [ ] Handle edge case: target has no matching filenames
+- [x] Handle edge case: target doesn't exist (copy all)
+- [x] Handle edge case: target has no matching filenames
 
 ## M2.3: Integration Tests
 
-- [ ] Test: update empty/missing target -> all copied
-- [ ] Test: update with existing older files -> all copied, per-date
+- [x] Test: update empty/missing target -> all copied
+- [x] Test: update with existing older files -> all copied, per-date
       numbering continues from target's max + 1
-- [ ] Test: update with newer existing files -> only strictly-newer
+- [x] Test: update with newer existing files -> only strictly-newer
       source files copied
-- [ ] Test: index numbering continuity (per-date)
-- [ ] Test: update with `--dry-run`
+- [x] Test: index numbering continuity (per-date)
+- [x] Test: update with `--dry-run`
 
 ## Exit Criteria
 
