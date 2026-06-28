@@ -48,6 +48,7 @@ typedef struct {
   int verbose;                    /*!< Verbose output flag */
   int dry_run;                    /*!< Dry-run mode flag */
   int force;                      /*!< Force overwrite flag */
+  int update;                     /*!< Update mode flag */
   CliDateOverride date_override;  /*!< Timestamp override from CLI flags */
 } CliArgs;
 

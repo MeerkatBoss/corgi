@@ -29,10 +29,11 @@ exclusive with the absolute forms).
       `days_from_civil()` algorithm)
 - [x] Wire override application into `Main.c`
 - [x] Tests: `--date` absolute/offset, `--set-*`, mutual exclusion and
-      malformed-value error cases (`tests/integration/test_timestamp_override.sh`).
-      Same-date-mismatch *rejection* and cross-date numbering *reset*
-      are not covered here -- both need two files with genuinely
-      different `real_timestamp` (ctime) values, which no portable,
+      malformed-value error cases
+      (`tests/integration/test_timestamp_override.sh`). Same-date-mismatch
+      *rejection* and cross-date numbering *reset* are not covered here --
+      both need two files with genuinely different `real_timestamp`
+      (ctime) values, which no portable,
       non-root tool can fake; covered indirectly by M2.1's
       filename-driven date tests instead.
 

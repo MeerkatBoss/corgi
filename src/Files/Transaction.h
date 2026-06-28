@@ -19,9 +19,13 @@
  * @brief Options for file operation execution
  */
 typedef struct {
-  int dry_run;    /*!< If true, operations are simulated without actual file changes */
+  int dry_run;    /*!< If true, operations are simulated, no file changes */
   int verbose;    /*!< If true, print detailed operation information */
   int force;      /*!< If true, allow overwriting existing files */
+  const DateIndexTable* date_table; /*!< Optional; seeds per-date
+                                          numbering from a prior target
+                                          scan (NULL to start every date
+                                          at 0, e.g. outside --update) */
 } TransactionOptions;
 
 /**
@@ -105,7 +109,8 @@ file_error_t file_transaction_commit(
  * @brief Rollback all prepared operations
  *
  * @return FERR_NONE on success,
- *         error code if rollback failed (filesystem may be inconsistent but no files are lost)
+ *         error code if rollback failed (filesystem may be inconsistent
+ *         but no files are lost)
  */
 file_error_t file_transaction_rollback(
   FileTransaction* transaction,

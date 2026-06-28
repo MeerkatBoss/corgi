@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <limits.h>
 #include <stdarg.h>
 #include <string.h>
 #include <stdlib.h>
@@ -186,7 +187,9 @@ static const char* get_extension(const char* path) {
   return extension;
 }
 
-static size_t pad_with_zeros(unsigned value, unsigned padding, size_t buf_size, char* buf) {
+static size_t pad_with_zeros(
+  unsigned value, unsigned padding, size_t buf_size, char* buf
+) {
   unsigned value_copy = value;
   unsigned length = 0;
   while (value_copy > 0) {
@@ -358,4 +361,133 @@ void file_clear_tags(IndexedFile* file) {
     file->tags[i] = NULL;
   }
   file->tag_count = 0;
+}
+
+/**
+ * Cleans up `out->tags[0..count)` on a parse failure partway through.
+ */
+static void cleanup_partial_tags(OrganizedName* out, size_t count) {
+  for (size_t i = 0; i < count; ++i) {
+    free(out->tags[i]);
+    out->tags[i] = NULL;
+  }
+}
+
+file_error_t file_parse_organized_name(
+  const char* filename,
+  OrganizedName* out
+) {
+  PANIC_IF_NULL(filename);
+  PANIC_IF_NULL(out);
+
+  out->date = 0;
+  out->index = 0;
+  out->tag_count = 0;
+  out->extension = NULL;
+  for (size_t i = 0; i < FILE_MAX_TAGS; ++i) {
+    out->tags[i] = NULL;
+  }
+
+  enum {
+    DATE_PREFIX_LEN = 11 /* "YYYY-MM-DD_" */
+  };
+
+  if (strlen(filename) <= DATE_PREFIX_LEN
+      || filename[4] != '-' || filename[7] != '-'
+      || filename[10] != '_') {
+    return FERR_INVALID_VALUE;
+  }
+  for (size_t i = 0; i < 10; ++i) {
+    if (i == 4 || i == 7) {
+      continue;
+    }
+    if (filename[i] < '0' || filename[i] > '9') {
+      return FERR_INVALID_VALUE;
+    }
+  }
+
+  unsigned year = (unsigned) (filename[0] - '0') * 1000u
+                + (unsigned) (filename[1] - '0') * 100u
+                + (unsigned) (filename[2] - '0') * 10u
+                + (unsigned) (filename[3] - '0');
+  unsigned month = (unsigned) (filename[5] - '0') * 10u
+                 + (unsigned) (filename[6] - '0');
+  unsigned day = (unsigned) (filename[8] - '0') * 10u
+               + (unsigned) (filename[9] - '0');
+  if (year < 1 || month < 1 || month > 12 || day < 1 || day > 31) {
+    return FERR_INVALID_VALUE;
+  }
+
+  /* Work on a mutable copy of "XXX_tag1_tag2.ext" so it can be split
+   * in place with '\0' separators. */
+  char* work = copy_string(filename + DATE_PREFIX_LEN);
+  PANIC_ON_BAD_ALLOC(work);
+
+  char* extension = NULL;
+  char* last_dot = strrchr(work, '.');
+  if (last_dot != NULL) {
+    *last_dot = '\0';
+    extension = last_dot + 1;
+  }
+
+  char* index_part = work;
+  char* underscore = strchr(work, '_');
+  if (underscore != NULL) {
+    *underscore = '\0';
+  }
+
+  if (index_part[0] == '\0') {
+    free(work);
+    return FERR_INVALID_VALUE;
+  }
+  for (const char* ch = index_part; *ch != '\0'; ++ch) {
+    if (*ch < '0' || *ch > '9') {
+      free(work);
+      return FERR_INVALID_VALUE;
+    }
+  }
+  unsigned long index_value = strtoul(index_part, NULL, 10);
+  if (index_value > USHRT_MAX) {
+    free(work);
+    return FERR_INVALID_VALUE;
+  }
+
+  size_t tag_count = 0;
+  char* cursor = (underscore != NULL) ? underscore + 1 : NULL;
+  while (cursor != NULL) {
+    char* next = strchr(cursor, '_');
+    if (next != NULL) {
+      *next = '\0';
+    }
+
+    if (*cursor == '\0' || !file_tag_is_valid(cursor)
+        || tag_count >= FILE_MAX_TAGS) {
+      cleanup_partial_tags(out, tag_count);
+      free(work);
+      return FERR_INVALID_VALUE;
+    }
+    out->tags[tag_count] = copy_string(cursor);
+    ++tag_count;
+
+    cursor = (next != NULL) ? next + 1 : NULL;
+  }
+
+  out->date = compute_utc_timestamp(
+    (long long) year, (long long) month - 1, (long long) day, 0, 0, 0
+  );
+  out->index = (unsigned short) index_value;
+  out->tag_count = tag_count;
+  out->extension = copy_string(extension != NULL ? extension : "");
+  free(work);
+
+  return FERR_NONE;
+}
+
+void file_organized_name_cleanup(OrganizedName* name) {
+  PANIC_IF_NULL(name);
+
+  cleanup_partial_tags(name, name->tag_count);
+  name->tag_count = 0;
+  free(name->extension);
+  name->extension = NULL;
 }

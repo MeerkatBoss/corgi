@@ -13,7 +13,8 @@ static const char* file_tag_error_to_string(file_error_t error) {
   case FERR_NONE:
     return "no error";
   case FERR_INVALID_VALUE:
-    return "tag contains invalid characters (only lowercase letters and '-' allowed)";
+    return "tag contains invalid characters "
+           "(only lowercase letters and '-' allowed)";
   case FERR_INVALID_OPERATION:
     return "maximum number of tags exceeded (limit: 8 tags per file)";
   case FERR_ACCESS_DENIED:
@@ -49,7 +50,8 @@ static file_error_t execute_operations(
 
   result = file_transaction_init(&transaction, target_dir, options);
   if (result != FERR_NONE) {
-    fprintf(stderr, "Error: Failed to initialize transaction for target '%s': %s\n",
+    fprintf(stderr,
+            "Error: Failed to initialize transaction for target '%s': %s\n",
             target_dir, directory_error_to_string(result));
     goto cleanup;
   }
@@ -69,7 +71,8 @@ static file_error_t execute_operations(
       fprintf(stderr, "Hint: use --force to allow overwriting of files\n");
     }
     fprintf(stderr, "Rolling back changes...\n");
-    file_error_t rollback_result = file_transaction_rollback(&transaction, options);
+    file_error_t rollback_result =
+      file_transaction_rollback(&transaction, options);
     if (rollback_result != FERR_NONE) {
       fprintf(stderr, "Error: Failed to rollback operations: %s\n",
               file_error_to_string(rollback_result));
@@ -109,6 +112,9 @@ int main(int argc, char** argv) {
   file_error_t result = FERR_NONE;
   FileIndex index;
   int index_initialized = 0;
+  DateIndexTable date_table;
+
+  file_date_index_table_init(&date_table);
 
   file_index_init(&index);
   index_initialized = 1;
@@ -127,6 +133,28 @@ int main(int argc, char** argv) {
   if (index.file_count == 0) {
     fprintf(stderr, "Warning: No files to process.\n");
     goto cleanup;
+  }
+
+  if (args.update) {
+    time_t max_timestamp = 0;
+    result = file_index_scan_target(
+      args.target_dir, &max_timestamp, &date_table
+    );
+    if (result != FERR_NONE) {
+      fprintf(stderr, "Error: Failed to scan target directory '%s': %s\n",
+              args.target_dir, directory_error_to_string(result));
+      goto cleanup;
+    }
+
+    file_index_filter_newer_than(&index, max_timestamp);
+    if (args.verbose) {
+      printf("%zu files newer than target's most recent file\n",
+             index.file_count);
+    }
+    if (index.file_count == 0) {
+      fprintf(stderr, "Warning: No files to process.\n");
+      goto cleanup;
+    }
   }
 
   {
@@ -172,7 +200,8 @@ int main(int argc, char** argv) {
   TransactionOptions options = {
     .dry_run = args.dry_run,
     .verbose = args.verbose,
-    .force = args.force
+    .force = args.force,
+    .date_table = args.update ? &date_table : NULL
   };
 
   result = execute_operations(&index, args.target_dir, &options);
@@ -181,6 +210,7 @@ cleanup:
   if (index_initialized) {
     file_index_clear(&index);
   }
+  file_date_index_table_cleanup(&date_table);
 
   return result == FERR_NONE ? 0 : 1;
 }

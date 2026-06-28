@@ -42,6 +42,9 @@ and this project adheres to
   date)
 - Destination files now have their mtime and atime set to match the
   computed timestamp when using `--date` or `--set-*` flags
+- `--update`/`-u` flag: only copy/move source files newer than the
+  most recent file already in the target directory, continuing
+  per-date index numbering from the target's existing files
 
 #### Changed
 - Portable build process

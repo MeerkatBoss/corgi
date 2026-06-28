@@ -306,7 +306,8 @@ static file_error_t prepare_dry_run_operation(
   }
 
   /* Check for file collision in dry-run mode (for copy/move operations) */
-  if ((state == PREP_STATE_COPY || state == PREP_STATE_MOVE) && !options->force) {
+  int is_transfer = (state == PREP_STATE_COPY || state == PREP_STATE_MOVE);
+  if (is_transfer && !options->force) {
     struct stat st;
     if (stat(op->target_path, &st) == 0) {
       return FERR_ALREADY_EXISTS;
@@ -316,8 +317,9 @@ static file_error_t prepare_dry_run_operation(
   op->state = state;
 
   if (options->verbose) {
-    if (state == PREP_STATE_COPY || state == PREP_STATE_MOVE) {
-      printf("  [DRY RUN] %s: %s -> %s\n", action_name, file->path, op->target_path);
+    if (is_transfer) {
+      printf("  [DRY RUN] %s: %s -> %s\n",
+             action_name, file->path, op->target_path);
     }
     else {
       printf("  [DRY RUN] %s: %s\n", action_name, file->path);
@@ -351,7 +353,9 @@ static file_error_t prepare_move_operation(
   const TransactionOptions* options
 ) {
   int used_hardlink = 0;
-  file_error_t result = link_or_copy_file(file->path, op->target_path, options, &used_hardlink);
+  file_error_t result = link_or_copy_file(
+    file->path, op->target_path, options, &used_hardlink
+  );
   if (result != FERR_NONE) {
     return result;
   }
@@ -359,7 +363,8 @@ static file_error_t prepare_move_operation(
   op->state = PREP_STATE_MOVE;
   if (options->verbose) {
     const char* method = used_hardlink ? "hardlink" : "copy";
-    printf("  Prepared move (%s): %s -> %s\n", method, file->path, op->target_path);
+    printf("  Prepared move (%s): %s -> %s\n",
+           method, file->path, op->target_path);
   }
 
   return FERR_NONE;
@@ -390,7 +395,9 @@ static file_error_t prepare_single_operation(
   char filename[FILENAME_BUFSIZE];
   file_generate_name(file, file_index, FILENAME_BUFSIZE, filename);
 
-  file_error_t result = build_target_path(target_directory, filename, &op->target_path);
+  file_error_t result = build_target_path(
+    target_directory, filename, &op->target_path
+  );
   if (result != FERR_NONE) {
     return result;
   }
@@ -446,7 +453,13 @@ file_error_t file_transaction_prepare(
     time_t file_date = file_truncate_to_day(file->override_timestamp);
     if (file_date != current_date) {
       current_date = file_date;
-      file_index = 0;
+
+      unsigned short target_max_index = 0;
+      int found = options->date_table != NULL
+        && file_date_index_table_lookup(
+             options->date_table, file_date, &target_max_index
+           );
+      file_index = found ? (unsigned short) (target_max_index + 1) : 0;
     }
 
     op = calloc(1, sizeof(*op));
@@ -506,7 +519,9 @@ quit:
  * effect that would survive a `rollback`. Commit is already the point
  * past which rollback is not attempted, so there is no such hazard here.
  */
-static file_error_t set_destination_timestamp(const char* path, time_t timestamp) {
+static file_error_t set_destination_timestamp(
+  const char* path, time_t timestamp
+) {
   struct utimbuf times;
   times.actime = timestamp;
   times.modtime = timestamp;

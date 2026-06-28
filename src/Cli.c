@@ -34,11 +34,16 @@ enum {
 };
 
 static const CliOptionDef CliOptions[] = {
-  {"tag",      't', 't', "TAG",  "Add tag to indexed files (can be used multiple times)"},
+  {"tag",      't', 't', "TAG",
+    "Add tag to indexed files (can be used multiple times)"},
   {"source",   's', 's', "DIR",  "Source directory (required)"},
   {"target",   'd', 'd', "DIR",  "Target directory (required)"},
-  {"verbose",  'v', 'v',  NULL,  "Print source and generated target file names"},
-  {"force",    'f', 'f',  NULL,  "Allow overwriting existing files in target directory"},
+  {"verbose",  'v', 'v',  NULL,
+    "Print source and generated target file names"},
+  {"force",    'f', 'f',  NULL,
+    "Allow overwriting existing files in target directory"},
+  {"update",   'u', 'u',  NULL,
+    "Only add source files newer than target's most recent file"},
   {"dry-run",    0, OPT_ID_DRY_RUN, NULL, "Do not copy files"},
   {"help",     'h', 'h',  NULL,  "Print this help message"},
   {"set-year",   0, OPT_ID_SET_YEAR, "YEAR",
@@ -188,7 +193,10 @@ static int parse_absolute_date(
  *
  * @return 0 on success, -1 on malformed token
  */
-static int parse_date_offset_token(const char* token, CliDateOverride* override) {
+static int parse_date_offset_token(
+  const char* token,
+  CliDateOverride* override
+) {
   enum {
     MAX_DIGITS = 9 /*!< Enough for realistic offsets, avoids int overflow */
   };
@@ -303,7 +311,8 @@ static int apply_date_option(char* value, CliArgs* parsed) {
   unsigned month = 0;
   unsigned day = 0;
   if (parse_absolute_date(value, &year, &month, &day) != 0) {
-    fprintf(stderr, "Error: invalid date '%s', expected 'YYYY-MM-DD'.\n", value);
+    fprintf(stderr,
+            "Error: invalid date '%s', expected 'YYYY-MM-DD'.\n", value);
     return -1;
   }
   override->year = year;
@@ -353,7 +362,8 @@ static int apply_set_component_option(
   if (parse_int(value, &parsed_value) != 0
       || parsed_value < (int) min
       || (max != UINT_MAX && parsed_value > (int) max)) {
-    fprintf(stderr, "Error: invalid value '%s' for option '--%s'.\n", value, name);
+    fprintf(stderr,
+            "Error: invalid value '%s' for option '--%s'.\n", value, name);
     return -1;
   }
 
@@ -373,6 +383,9 @@ static int apply_option(int option_idx, char* value, CliArgs* parsed) {
       break;
     case 'f':
       parsed->force = 1;
+      break;
+    case 'u':
+      parsed->update = 1;
       break;
     case 'h':
       print_help(parsed->program_name);
@@ -540,6 +553,7 @@ int parse_args(int argc, char** argv, CliArgs* parsed) {
   parsed->dry_run = 0;
   parsed->verbose = 0;
   parsed->force = 0;
+  parsed->update = 0;
   memset(&parsed->date_override, 0, sizeof(parsed->date_override));
 
   CliParseState state = {
