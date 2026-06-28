@@ -93,6 +93,27 @@ void file_apply_timestamp_override(
   const TimestampOverride* override
 );
 
+enum {
+  FILE_DATE_BUFSIZE = 11 /*!< Length of "YYYY-MM-DD\0" */
+};
+
+/**
+ * @brief Format `file->override_timestamp` as "YYYY-MM-DD" (UTC)
+ */
+void file_format_date(
+  const IndexedFile* file,  /*!< [in]  Target file */
+  char* buf,                /*!< [out] Buffer of at least FILE_DATE_BUFSIZE */
+  size_t buf_size           /*!< [in]  Size of `buf` */
+);
+
+/**
+ * @brief Truncate a UTC timestamp to midnight of its calendar day
+ *
+ * @note Used to compare timestamps by calendar date alone, e.g. for
+ * per-date file numbering.
+ */
+time_t file_truncate_to_day(time_t timestamp);
+
 /**
  * @brief Deallocate resources used by IndexedFile
  */

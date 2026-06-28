@@ -19,6 +19,6 @@
 - [x] Apply timestamp overrides to indexed files
 - [x] Check same-date precondition for absolute overrides
 - [x] Persist `override_timestamp` as destination mtime/atime
-- [ ] Implement per-date numbering
+- [x] Implement per-date numbering
 # CI
 - [x] Check for building with musl instead of glibc

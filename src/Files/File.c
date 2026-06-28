@@ -149,6 +149,21 @@ void file_apply_timestamp_override(
   );
 }
 
+void file_format_date(const IndexedFile* file, char* buf, size_t buf_size) {
+  PANIC_IF_NULL(file);
+  PANIC_IF_NULL(buf);
+
+  const struct tm* time = gmtime(&file->override_timestamp);
+  strftime(buf, buf_size, "%Y-%m-%d", time);
+}
+
+time_t file_truncate_to_day(time_t timestamp) {
+  struct tm time = *gmtime(&timestamp);
+  return compute_utc_timestamp(
+    1900LL + time.tm_year, time.tm_mon, time.tm_mday, 0, 0, 0
+  );
+}
+
 static const char* get_extension(const char* path) {
   const char* last_dot = strrchr(path, '.');
   const char* last_slash = strrchr(path, '/');
@@ -208,14 +223,11 @@ unsigned long file_generate_name(
   PANIC_IF_NULL(name_buf);
 
   enum {
-    DATE_BUFSIZE = 11, /* YYYY-MM-DD\0 */
     INDEX_BUFSIZE = 6, /* XXXXX\0*/
     INDEX_PADDING = 3
   };
-  /* Format timestamp */
-  const struct tm* time = gmtime(&file->override_timestamp);
-  char date_buf[DATE_BUFSIZE];
-  strftime(date_buf, DATE_BUFSIZE, "%Y-%m-%d", time);
+  char date_buf[FILE_DATE_BUFSIZE];
+  file_format_date(file, date_buf, FILE_DATE_BUFSIZE);
 
   const char* tags[FILE_MAX_TAGS];
   size_t unique_count = file_get_unique_tags(file, FILE_MAX_TAGS, tags);

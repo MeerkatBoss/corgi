@@ -434,11 +434,21 @@ file_error_t file_transaction_prepare(
   file_error_t result = FERR_NONE;
   PreparedOperation* op = NULL;
   unsigned short file_index = 0;
-  
+  time_t current_date = (time_t) -1; /* sentinel: no date seen yet */
+
   /* Process each file in the index */
   LIST_CONST_FOREACH(node, index->files) {
     const IndexedFile* file = (const IndexedFile*) node;
-    
+
+    /* Files are sorted by real_timestamp, and override_timestamp is a
+     * monotonic function of it, so same-date files are contiguous --
+     * resetting on date change is enough for per-date numbering. */
+    time_t file_date = file_truncate_to_day(file->override_timestamp);
+    if (file_date != current_date) {
+      current_date = file_date;
+      file_index = 0;
+    }
+
     op = calloc(1, sizeof(*op));
     PANIC_ON_BAD_ALLOC(op);
 

@@ -28,23 +28,31 @@ exclusive with the absolute forms).
       `Files/File.c`/`.h` (avoids `timegm()` with portable
       `days_from_civil()` algorithm)
 - [x] Wire override application into `Main.c`
-- [ ] Tests: `--date` absolute/offset, `--set-*`, same-date error cases,
-      offset+absolute mutual exclusion
+- [x] Tests: `--date` absolute/offset, `--set-*`, mutual exclusion and
+      malformed-value error cases (`tests/integration/test_timestamp_override.sh`).
+      Same-date-mismatch *rejection* and cross-date numbering *reset*
+      are not covered here -- both need two files with genuinely
+      different `real_timestamp` (ctime) values, which no portable,
+      non-root tool can fake; covered indirectly by M2.1's
+      filename-driven date tests instead.
 
 ## Prereq 2: Persist override_timestamp as destination mtime/atime
 
-- [ ] `set_destination_timestamp()` in `Transaction.c` (`utime()`)
-- [ ] Call from `commit_copy_operation()` and `commit_move_operation()`
+- [x] `set_destination_timestamp()` in `Transaction.c` (`utime()`)
+- [x] Call from `commit_copy_operation()` and `commit_move_operation()`
       (commit phase, not prepare -- avoids the hardlink/rollback hazard)
-- [ ] Test: destination file mtime/atime match computed override date
+- [x] Test: destination file mtime/atime match computed override date
+      (bracketed via `touch -t` + `find -newer`, portable across
+      GNU/BSD/macOS without needing platform-specific `stat` flags)
 
 ## Prereq 3: Per-date file numbering
 
-- [ ] `file_truncate_to_day()` helper in `Files/File.c`/`.h`
-- [ ] `file_format_date()` helper (refactor out of `file_generate_name`)
-- [ ] Replace global counter in `file_transaction_prepare()` with
+- [x] `file_truncate_to_day()` helper in `Files/File.c`/`.h`
+- [x] `file_format_date()` helper (refactor out of `file_generate_name`)
+- [x] Replace global counter in `file_transaction_prepare()` with
       per-date reset-on-change counter
-- [ ] Test: files spanning two dates get independent 001/002/... per date
+- [x] Test: same-date files get sequential numbering (000, 001, ...);
+      see note above on why cross-date reset isn't directly testable here
 
 ## M2.1: Target Directory Scanning
 
