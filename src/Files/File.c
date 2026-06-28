@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <limits.h>
 #include <stdarg.h>
 #include <string.h>
 #include <stdlib.h>
@@ -56,6 +57,114 @@ void file_cleanup(IndexedFile* file) {
   file->path = NULL;
 }
 
+/**
+ * Floor division/modulo (round toward negative infinity), needed because
+ * '/' and '%' truncate toward zero in C and would mishandle negative
+ * month offsets.
+ */
+static long long floor_div(long long a, long long b) {
+  long long quotient = a / b;
+  long long remainder = a % b;
+  if (remainder != 0 && ((remainder < 0) != (b < 0))) {
+    quotient -= 1;
+  }
+  return quotient;
+}
+
+static long long floor_mod(long long a, long long b) {
+  long long remainder = a % b;
+  if (remainder != 0 && ((remainder < 0) != (b < 0))) {
+    remainder += b;
+  }
+  return remainder;
+}
+
+/**
+ * Days since 1970-01-01 for civil date (year, month, day), where `month`
+ * must be in [1, 12] but `day` may be any integer (including out of the
+ * normal 1-31 range) -- overflow/underflow in `day` carries into the
+ * result correctly. Howard Hinnant's well-known "days_from_civil"
+ * algorithm, extended to `long long` to avoid the range limits of
+ * `time_t`-sized arithmetic on platforms with 32-bit `time_t`.
+ */
+static long long days_from_civil(long long year, int month, long long day) {
+  long long y = year - (month <= 2 ? 1 : 0);
+  long long era = (y >= 0 ? y : y - 399) / 400;
+  long long year_of_era = y - era * 400;
+  long long day_of_year =
+    (153 * (month + (month > 2 ? -3 : 9)) + 2) / 5 + day - 1;
+  long long day_of_era =
+    year_of_era * 365 + year_of_era / 4 - year_of_era / 100 + day_of_year;
+  return era * 146097 + day_of_era - 719468;
+}
+
+/**
+ * Converts a possibly out-of-range (year, 0-based month, day) calendar
+ * date plus time-of-day into a UTC `time_t`. Avoids `timegm()`, which is
+ * not part of ISO C and is gated behind extension feature-test macros on
+ * some platforms.
+ */
+static time_t compute_utc_timestamp(
+  long long year,
+  long long month0,
+  long long day,
+  int hour,
+  int minute,
+  int second
+) {
+  long long total_months = year * 12 + month0;
+  long long normalized_year = floor_div(total_months, 12);
+  int normalized_month = (int) floor_mod(total_months, 12) + 1;
+
+  long long days = days_from_civil(normalized_year, normalized_month, day);
+  return (time_t) (
+    days * 86400LL + hour * 3600LL + minute * 60LL + second
+  );
+}
+
+void file_apply_timestamp_override(
+  IndexedFile* file,
+  const TimestampOverride* override
+) {
+  PANIC_IF_NULL(file);
+  PANIC_IF_NULL(override);
+
+  struct tm time = *gmtime(&file->real_timestamp);
+
+  long long year = 1900LL + time.tm_year + override->offset_year;
+  long long month0 = time.tm_mon + override->offset_month;
+  long long day = time.tm_mday + override->offset_day;
+
+  if (override->year != 0) {
+    year = (long long) override->year;
+  }
+  if (override->month != 0) {
+    month0 = (long long) override->month - 1;
+  }
+  if (override->day != 0) {
+    day = (long long) override->day;
+  }
+
+  file->override_timestamp = compute_utc_timestamp(
+    year, month0, day, time.tm_hour, time.tm_min, time.tm_sec
+  );
+}
+
+void file_format_date(const IndexedFile* file, char* buf, size_t buf_size) {
+  PANIC_IF_NULL(file);
+  PANIC_IF_NULL(buf);
+
+  const struct tm* time = gmtime(&file->override_timestamp);
+  strftime(buf, buf_size, "%Y-%m-%d", time);
+}
+
+time_t file_truncate_to_day(time_t timestamp) {
+  struct tm time = *gmtime(&timestamp);
+  return compute_utc_timestamp(
+    1900LL + time.tm_year, time.tm_mon, time.tm_mday, 0, 0, 0
+  );
+}
+
 static const char* get_extension(const char* path) {
   const char* last_dot = strrchr(path, '.');
   const char* last_slash = strrchr(path, '/');
@@ -78,7 +187,9 @@ static const char* get_extension(const char* path) {
   return extension;
 }
 
-static size_t pad_with_zeros(unsigned value, unsigned padding, size_t buf_size, char* buf) {
+static size_t pad_with_zeros(
+  unsigned value, unsigned padding, size_t buf_size, char* buf
+) {
   unsigned value_copy = value;
   unsigned length = 0;
   while (value_copy > 0) {
@@ -115,14 +226,11 @@ unsigned long file_generate_name(
   PANIC_IF_NULL(name_buf);
 
   enum {
-    DATE_BUFSIZE = 11, /* YYYY-MM-DD\0 */
     INDEX_BUFSIZE = 6, /* XXXXX\0*/
     INDEX_PADDING = 3
   };
-  /* Format timestamp */
-  const struct tm* time = gmtime(&file->override_timestamp);
-  char date_buf[DATE_BUFSIZE];
-  strftime(date_buf, DATE_BUFSIZE, "%Y-%m-%d", time);
+  char date_buf[FILE_DATE_BUFSIZE];
+  file_format_date(file, date_buf, FILE_DATE_BUFSIZE);
 
   const char* tags[FILE_MAX_TAGS];
   size_t unique_count = file_get_unique_tags(file, FILE_MAX_TAGS, tags);
@@ -253,4 +361,133 @@ void file_clear_tags(IndexedFile* file) {
     file->tags[i] = NULL;
   }
   file->tag_count = 0;
+}
+
+/**
+ * Cleans up `out->tags[0..count)` on a parse failure partway through.
+ */
+static void cleanup_partial_tags(OrganizedName* out, size_t count) {
+  for (size_t i = 0; i < count; ++i) {
+    free(out->tags[i]);
+    out->tags[i] = NULL;
+  }
+}
+
+file_error_t file_parse_organized_name(
+  const char* filename,
+  OrganizedName* out
+) {
+  PANIC_IF_NULL(filename);
+  PANIC_IF_NULL(out);
+
+  out->date = 0;
+  out->index = 0;
+  out->tag_count = 0;
+  out->extension = NULL;
+  for (size_t i = 0; i < FILE_MAX_TAGS; ++i) {
+    out->tags[i] = NULL;
+  }
+
+  enum {
+    DATE_PREFIX_LEN = 11 /* "YYYY-MM-DD_" */
+  };
+
+  if (strlen(filename) <= DATE_PREFIX_LEN
+      || filename[4] != '-' || filename[7] != '-'
+      || filename[10] != '_') {
+    return FERR_INVALID_VALUE;
+  }
+  for (size_t i = 0; i < 10; ++i) {
+    if (i == 4 || i == 7) {
+      continue;
+    }
+    if (filename[i] < '0' || filename[i] > '9') {
+      return FERR_INVALID_VALUE;
+    }
+  }
+
+  unsigned year = (unsigned) (filename[0] - '0') * 1000u
+                + (unsigned) (filename[1] - '0') * 100u
+                + (unsigned) (filename[2] - '0') * 10u
+                + (unsigned) (filename[3] - '0');
+  unsigned month = (unsigned) (filename[5] - '0') * 10u
+                 + (unsigned) (filename[6] - '0');
+  unsigned day = (unsigned) (filename[8] - '0') * 10u
+               + (unsigned) (filename[9] - '0');
+  if (year < 1 || month < 1 || month > 12 || day < 1 || day > 31) {
+    return FERR_INVALID_VALUE;
+  }
+
+  /* Work on a mutable copy of "XXX_tag1_tag2.ext" so it can be split
+   * in place with '\0' separators. */
+  char* work = copy_string(filename + DATE_PREFIX_LEN);
+  PANIC_ON_BAD_ALLOC(work);
+
+  char* extension = NULL;
+  char* last_dot = strrchr(work, '.');
+  if (last_dot != NULL) {
+    *last_dot = '\0';
+    extension = last_dot + 1;
+  }
+
+  char* index_part = work;
+  char* underscore = strchr(work, '_');
+  if (underscore != NULL) {
+    *underscore = '\0';
+  }
+
+  if (index_part[0] == '\0') {
+    free(work);
+    return FERR_INVALID_VALUE;
+  }
+  for (const char* ch = index_part; *ch != '\0'; ++ch) {
+    if (*ch < '0' || *ch > '9') {
+      free(work);
+      return FERR_INVALID_VALUE;
+    }
+  }
+  unsigned long index_value = strtoul(index_part, NULL, 10);
+  if (index_value > USHRT_MAX) {
+    free(work);
+    return FERR_INVALID_VALUE;
+  }
+
+  size_t tag_count = 0;
+  char* cursor = (underscore != NULL) ? underscore + 1 : NULL;
+  while (cursor != NULL) {
+    char* next = strchr(cursor, '_');
+    if (next != NULL) {
+      *next = '\0';
+    }
+
+    if (*cursor == '\0' || !file_tag_is_valid(cursor)
+        || tag_count >= FILE_MAX_TAGS) {
+      cleanup_partial_tags(out, tag_count);
+      free(work);
+      return FERR_INVALID_VALUE;
+    }
+    out->tags[tag_count] = copy_string(cursor);
+    ++tag_count;
+
+    cursor = (next != NULL) ? next + 1 : NULL;
+  }
+
+  out->date = compute_utc_timestamp(
+    (long long) year, (long long) month - 1, (long long) day, 0, 0, 0
+  );
+  out->index = (unsigned short) index_value;
+  out->tag_count = tag_count;
+  out->extension = copy_string(extension != NULL ? extension : "");
+  free(work);
+
+  return FERR_NONE;
+}
+
+void file_organized_name_cleanup(OrganizedName* name) {
+  PANIC_IF_NULL(name);
+
+  cleanup_partial_tags(name, name->tag_count);
+  name->tag_count = 0;
+  free(name->extension);
+  name->extension = NULL;
 }

@@ -6,6 +6,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <utime.h>
 
 #include "Common/Panic.h"
 #include "Common/Strings.h"
@@ -305,7 +306,8 @@ static file_error_t prepare_dry_run_operation(
   }
 
   /* Check for file collision in dry-run mode (for copy/move operations) */
-  if ((state == PREP_STATE_COPY || state == PREP_STATE_MOVE) && !options->force) {
+  int is_transfer = (state == PREP_STATE_COPY || state == PREP_STATE_MOVE);
+  if (is_transfer && !options->force) {
     struct stat st;
     if (stat(op->target_path, &st) == 0) {
       return FERR_ALREADY_EXISTS;
@@ -315,8 +317,9 @@ static file_error_t prepare_dry_run_operation(
   op->state = state;
 
   if (options->verbose) {
-    if (state == PREP_STATE_COPY || state == PREP_STATE_MOVE) {
-      printf("  [DRY RUN] %s: %s -> %s\n", action_name, file->path, op->target_path);
+    if (is_transfer) {
+      printf("  [DRY RUN] %s: %s -> %s\n",
+             action_name, file->path, op->target_path);
     }
     else {
       printf("  [DRY RUN] %s: %s\n", action_name, file->path);
@@ -350,7 +353,9 @@ static file_error_t prepare_move_operation(
   const TransactionOptions* options
 ) {
   int used_hardlink = 0;
-  file_error_t result = link_or_copy_file(file->path, op->target_path, options, &used_hardlink);
+  file_error_t result = link_or_copy_file(
+    file->path, op->target_path, options, &used_hardlink
+  );
   if (result != FERR_NONE) {
     return result;
   }
@@ -358,7 +363,8 @@ static file_error_t prepare_move_operation(
   op->state = PREP_STATE_MOVE;
   if (options->verbose) {
     const char* method = used_hardlink ? "hardlink" : "copy";
-    printf("  Prepared move (%s): %s -> %s\n", method, file->path, op->target_path);
+    printf("  Prepared move (%s): %s -> %s\n",
+           method, file->path, op->target_path);
   }
 
   return FERR_NONE;
@@ -389,7 +395,9 @@ static file_error_t prepare_single_operation(
   char filename[FILENAME_BUFSIZE];
   file_generate_name(file, file_index, FILENAME_BUFSIZE, filename);
 
-  file_error_t result = build_target_path(target_directory, filename, &op->target_path);
+  file_error_t result = build_target_path(
+    target_directory, filename, &op->target_path
+  );
   if (result != FERR_NONE) {
     return result;
   }
@@ -433,11 +441,27 @@ file_error_t file_transaction_prepare(
   file_error_t result = FERR_NONE;
   PreparedOperation* op = NULL;
   unsigned short file_index = 0;
-  
+  time_t current_date = (time_t) -1; /* sentinel: no date seen yet */
+
   /* Process each file in the index */
   LIST_CONST_FOREACH(node, index->files) {
     const IndexedFile* file = (const IndexedFile*) node;
-    
+
+    /* Files are sorted by real_timestamp, and override_timestamp is a
+     * monotonic function of it, so same-date files are contiguous --
+     * resetting on date change is enough for per-date numbering. */
+    time_t file_date = file_truncate_to_day(file->override_timestamp);
+    if (file_date != current_date) {
+      current_date = file_date;
+
+      unsigned short target_max_index = 0;
+      int found = options->date_table != NULL
+        && file_date_index_table_lookup(
+             options->date_table, file_date, &target_max_index
+           );
+      file_index = found ? (unsigned short) (target_max_index + 1) : 0;
+    }
+
     op = calloc(1, sizeof(*op));
     PANIC_ON_BAD_ALLOC(op);
 
@@ -486,6 +510,28 @@ quit:
   return result;
 }
 
+/**
+ * Sets both access and modification time of `path` to `timestamp`.
+ *
+ * @note Applied during commit, not prepare: for moves, `prepare` may have
+ * hardlinked the target to the source (sharing one inode), and setting
+ * the timestamp there would also alter the source's mtime -- a side
+ * effect that would survive a `rollback`. Commit is already the point
+ * past which rollback is not attempted, so there is no such hazard here.
+ */
+static file_error_t set_destination_timestamp(
+  const char* path, time_t timestamp
+) {
+  struct utimbuf times;
+  times.actime = timestamp;
+  times.modtime = timestamp;
+
+  if (utime(path, &times) != 0) {
+    return FERR_ACCESS_DENIED;
+  }
+  return FERR_NONE;
+}
+
 static file_error_t commit_move_operation(
   PreparedOperation* op,
   const TransactionOptions* options
@@ -497,6 +543,17 @@ static file_error_t commit_move_operation(
     }
     return FERR_ACCESS_DENIED;
   }
+
+  file_error_t result = set_destination_timestamp(
+    op->target_path, op->source_file->override_timestamp
+  );
+  if (result != FERR_NONE) {
+    if (options->verbose) {
+      fprintf(stderr, "  Failed to set timestamp: %s\n", op->target_path);
+    }
+    return result;
+  }
+
   if (options->verbose) {
     printf("  Committed move: %s\n", op->source_file->path);
   }
@@ -530,8 +587,18 @@ static file_error_t commit_copy_operation(
   PreparedOperation* op,
   const TransactionOptions* options
 ) {
+  file_error_t result = set_destination_timestamp(
+    op->target_path, op->source_file->override_timestamp
+  );
+  if (result != FERR_NONE) {
+    if (options->verbose) {
+      fprintf(stderr, "  Failed to set timestamp: %s\n", op->target_path);
+    }
+    return result;
+  }
+
   if (options->verbose) {
-    printf("  Nothing to commit for %s (copied)\n", op->source_file->path);
+    printf("  Committed copy: %s\n", op->source_file->path);
   }
   return FERR_NONE;
 }

@@ -80,7 +80,7 @@ test_group "Verbose mode"
     assert_contains "Prepare reported" "$output" "Preparing 2 operations"
     assert_contains "Commit reported" "$output" "Committing 2 operations"
     assert_contains "Copy reported" "$output" "copy: $SOURCE_DIR/file1.txt ->"
-    assert_contains "NOP reported" "$output" "Nothing to commit"
+    assert_contains "Commit copy reported" "$output" "Committed copy:"
 finish_test || exit 1
 
 test_group "Help command"

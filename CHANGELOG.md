@@ -34,6 +34,17 @@ and this project adheres to
 - Github CI to check successful builds
 - Automated integration testing
 - Github CI to run tests
+- Timestamp override CLI flags: `--date` (absolute or offset tokens)
+  and `--set-year`/`-month`/`-day` (absolute, component-wise)
+- Timestamp override application: `--date` and `--set-*` flags now
+  modify file dates before naming (offset tokens normalize calendar
+  dates correctly; absolute forms require all source files to share a
+  date)
+- Destination files now have their mtime and atime set to match the
+  computed timestamp when using `--date` or `--set-*` flags
+- `--update`/`-u` flag: only copy/move source files newer than the
+  most recent file already in the target directory, continuing
+  per-date index numbering from the target's existing files
 
 #### Changed
 - Portable build process

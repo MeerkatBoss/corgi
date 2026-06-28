@@ -232,10 +232,25 @@ debug: $(BUILD_BIN)/$(PROJECT)
 
 check: test
 
-tidy:
+tidy: tidy-lines
 	@$(call require-tool,$(CLANG_TIDY),Code checking)
 	@$(CLANG_TIDY) -p $(BUILDDIR) $(SOURCES) -header-filter=.* -- \
 	 $(CFLAGS) $(INCFLAGS)
+
+# Enforce the project's 80-column limit (.claude/rules/formatting.md)
+# on all tracked source/header files.
+tidy-lines:
+	@status=0; \
+	for f in $(SOURCES) $(HEADERS); do \
+		awk -v f="$$f" 'length > 80 { \
+			printf "%s:%d: line too long (%d > 80)\n", f, NR, length; \
+			err=1 \
+		} END { exit err }' "$$f" || status=1; \
+	done; \
+	if [ $$status -ne 0 ]; then \
+		echo "$(call color,RED,Lines exceeding 80 columns found.)"; \
+		exit 1; \
+	fi
 
 install: $(BUILD_BIN)/$(PROJECT)
 	@mkdir -p $(bindir)
@@ -297,5 +312,5 @@ test-integration: $(BUILD_BIN)/$(PROJECT) test-setup
 	 /bin/sh $(TEST_INTEGRATION_DIR)/runner.sh $(TESTS)
 
 .PHONY: all remake clean cleaner run init debug doc view-doc check tidy \
-				compiler-info install uninstall dist distclean distcheck \
-				test test-integration test-clean test-setup
+				tidy-lines compiler-info install uninstall dist distclean \
+				distcheck test test-integration test-clean test-setup

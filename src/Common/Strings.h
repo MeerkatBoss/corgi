@@ -17,7 +17,8 @@
 /**
  * Creates a copy of the given string
  * @param str The string to copy
- * @return A newly allocated copy of the string, or NULL if str is NULL or allocation fails
+ * @return A newly allocated copy of the string, or NULL if str is NULL
+ *         or allocation fails
  */
 char* copy_string(const char* str);
 
@@ -26,7 +27,8 @@ char* copy_string(const char* str);
  * @param buf The destination buffer
  * @param buf_size The size of the buffer
  * @param str The string to append
- * @return The total length that would be needed (including what was already in buf)
+ * @return The total length that would be needed (including what was
+ *         already in buf)
  */
 unsigned long append_string(char* buf, unsigned long buf_size, const char* str);
 
