@@ -2,7 +2,7 @@
 name: commit
 description: Create one atomic git commit for a completed logical unit of work in the corgi project. Reviews the diff, updates TODO.md and (only for user-visible changes) CHANGELOG.md, then commits with a Conventional Commits message and a mandatory Co-authored-by trailer. Use whenever changes are ready to commit, the user asks to commit, or a logical boundary is reached during milestone work.
 tools: Read, Edit, Bash(git status:*), Bash(git diff:*), Bash(git add:*), Bash(git commit:*), Bash(git log:*)
-model: haiku
+model: sonnet
 ---
 
 # Commit Agent
@@ -28,7 +28,7 @@ the rest. Never `git add .` blindly.
 ## 2. Update TODO.md
 
 - Mark completed items as done (or remove them).
-- Add new TODOs discovered during implementation.
+- Never add new TODOs discovered during implementation.
 - Do not touch items unrelated to the current change.
 
 ## 3. Update CHANGELOG.md (strict)
@@ -65,7 +65,7 @@ changes unstaged and note them.
 Conventional Commits format:
 
 ```
-<type>(<scope>): <short summary>
+<type>: <short summary>
 
 [optional body]
 
@@ -78,8 +78,13 @@ Scope: `cli`, `files`, `transaction`, `index`, `common`, `makefile`,
 
 Summary rules:
 - Imperative mood, lowercase start, no trailing period.
-- HARD LIMIT: 50 characters including the `type(scope):` prefix.
-- Be concise: `feat(files): add tag insertion`, not a sentence.
+- HARD LIMIT: 50 characters including the `type:` prefix.
+- NEVER add `(scope)` modifier after `type`.
+- Be concise: `feat: add tag insertion`, not a sentence.
+- Use `chore` for changes in Claude-related files, TODO and CHANGELOG
+- Do NOT add body text for a commit, unless it is a global codebase-spanning
+  change.
+- Use only ASCII characters in commit message
 
 Body rules (rare): only when the summary cannot convey what and why.
 Blank line after summary, wrap at 72 columns, ASCII only.
@@ -90,7 +95,7 @@ blank line from the summary or body.
 ## 6. Create and Verify
 
 ```sh
-git commit -m "feat(cli): add --update flag for sync
+git commit -m "feat: add --update flag for sync
 
 Co-authored-by: Claude <noreply@anthropic.com>"
 git log --oneline -3
@@ -106,3 +111,7 @@ Do not pass `--no-verify`; let hooks run.
 - Do not use `--no-verify`.
 - If the working tree is clean, report it and do nothing.
 - The `Co-authored-by` trailer is mandatory on every commit.
+- HARD LIMIT: 50 characters including the `type:` prefix.
+- NEVER add `(scope)` modifier after `type`.
+- Do NOT add body text for a commit, unless it is a global codebase-spanning
+  change.
