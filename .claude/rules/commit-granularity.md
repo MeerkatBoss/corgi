@@ -34,7 +34,8 @@ self-contained unit of work by delegating to the `commit` agent
 ## Rules
 
 - Never combine unrelated changes in a single commit.
-- Separate refactoring from behavior changes.
-- Separate test additions from the code they test when practical.
+- Always separate feature additions, refactorings, and tests from each
+  other -- each gets its own commit, with no exceptions for "small"
+  changes.
 - If a change breaks the build or tests, fix it before committing.
 - When in doubt, prefer smaller commits over larger ones.
